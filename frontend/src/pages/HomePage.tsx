@@ -3,20 +3,60 @@ import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { MediaRow } from '../components/MediaRow'
 import { PosterCard } from '../components/PosterCard'
-import type { LibrarySummary, Movie, ProgressEntry, RecentItem, Show } from '../types'
-
-function formatAdded(iso: string): string {
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return 'Recently added'
-  return date.toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
+import type { Movie, ProgressEntry, RecentItem, Show } from '../types'
 
 function itemLink(item: RecentItem): string {
   return item.kind === 'series' ? `/series/${item.id}` : `/movies/${item.id}`
+}
+
+function heroMediaCopy(
+  item: RecentItem,
+  shows: Show[],
+): { title: string; detail: string | null } {
+  if (item.kind === 'series') {
+    const seasonWord = item.title.match(/\b(?:season|series)\s*(\d{1,2})\b/i)
+    let title = item.title
+      .replace(/\b(?:season|series|seasons)\s*\d{1,2}\b/gi, ' ')
+      .replace(/[._]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+    title = title.replace(/[\s.\-_]+$/g, '') || item.title
+
+    const show = shows.find((entry) => entry.id === item.id)
+    if (seasonWord) {
+      return { title, detail: `Season ${Number(seasonWord[1])}` }
+    }
+    if (show?.seasons.length === 1) {
+      return { title, detail: `Season ${show.seasons[0].number}` }
+    }
+    if (show && show.seasons.length > 1) {
+      const nums = show.seasons.map((season) => season.number).sort((a, b) => a - b)
+      return { title, detail: `Seasons ${nums[0]}–${nums[nums.length - 1]}` }
+    }
+    return { title, detail: null }
+  }
+
+  const parenYear = item.title.match(/\((\d{4})\)/)
+  const bareYear = item.title.match(/\b((?:19|20)\d{2})\b/)
+  const year = parenYear?.[1] ?? bareYear?.[1] ?? null
+
+  let title = item.title
+  if (parenYear) {
+    title = item.title.replace(/\s*\(\d{4}\)\s*/g, ' ').trim()
+  } else if (year) {
+    const yearIndex = item.title.search(/\b(?:19|20)\d{2}\b/)
+    if (yearIndex > 0) {
+      title = item.title.slice(0, yearIndex)
+    }
+  }
+
+  title = title
+    .replace(/[._]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/[\s.\-_]+$/g, '')
+    .trim()
+
+  return { title: title || item.title, detail: year }
 }
 
 export function HomePage() {
@@ -25,25 +65,22 @@ export function HomePage() {
   const [progress, setProgress] = useState<ProgressEntry[]>([])
   const [recent, setRecent] = useState<RecentItem[]>([])
   const [activeRecent, setActiveRecent] = useState(0)
-  const [summary, setSummary] = useState<LibrarySummary | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       try {
-        const [m, s, p, lib, r] = await Promise.all([
+        const [m, s, p, r] = await Promise.all([
           api.movies(),
           api.series(),
           api.progress(),
-          api.library(),
           api.recent(5),
         ])
         if (cancelled) return
         setMovies(m)
         setSeries(s)
         setProgress(p)
-        setSummary(lib)
         setRecent(r)
         setActiveRecent(0)
       } catch (err) {
@@ -64,34 +101,31 @@ export function HomePage() {
   }, [recent])
 
   const featured = recent[activeRecent] ?? null
+  const featuredCopy = featured ? heroMediaCopy(featured, series) : null
 
   return (
     <main className="page">
-      <section className="hero">
+      <section className={`hero${featured?.poster ? ' has-poster' : ''}`}>
+        {recent.map((item, index) =>
+          item.poster ? (
+            <div
+              key={`${item.kind}-${item.id}`}
+              className={`hero-backdrop${index === activeRecent ? ' active' : ''}`}
+              aria-hidden={index !== activeRecent}
+            >
+              <img src={item.poster} alt="" />
+            </div>
+          ) : null,
+        )}
+        <div className="hero-scrim" aria-hidden />
         <div className="hero-content">
           <h1 className="hero-brand">Locflix</h1>
-          {featured ? (
+          {featured && featuredCopy ? (
             <>
-              <p className="hero-kicker">Recently added · {formatAdded(featured.added_at)}</p>
-              <h2 className="hero-title">{featured.title}</h2>
-              <p className="hero-meta">
-                {featured.kind === 'series'
-                  ? `TV Series${featured.episode_count != null ? ` · ${featured.episode_count} episodes` : ''}`
-                  : 'Movie'}
-                {summary
-                  ? ` · ${summary.movies} movies · ${summary.series} series in your library`
-                  : ''}
-              </p>
-              <div className="hero-actions">
-                <Link className="btn btn-primary" to={itemLink(featured)}>
-                  Open
-                </Link>
-                {featured.kind === 'movie' && featured.default_file_id && (
-                  <Link className="btn" to={`/watch/${featured.default_file_id}`}>
-                    Play
-                  </Link>
-                )}
-              </div>
+              <Link className="hero-media" to={itemLink(featured)}>
+                <h2 className="hero-title">{featuredCopy.title}</h2>
+                {featuredCopy.detail ? <p className="hero-detail">{featuredCopy.detail}</p> : null}
+              </Link>
               {recent.length > 1 && (
                 <div className="hero-dots" role="tablist" aria-label="Recently added titles">
                   {recent.map((item, index) => (
