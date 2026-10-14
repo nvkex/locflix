@@ -1,0 +1,1 @@
+"""Locflix backend application package."""
