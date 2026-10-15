@@ -153,6 +153,7 @@ Cached under `backend/data/posters/`.
 | Doc | Purpose |
 |-----|---------|
 | [Design document](docs/DESIGN.md) | Architecture, UX, API, security, config |
+| [Feature notes](docs/FEATURES.md) | Brief how-it-works (posters, TMDB, progress, etc.) |
 | [Development plan](docs/DEVELOPMENT_PLAN.md) | Phased roadmap and milestones |
 
 ---
