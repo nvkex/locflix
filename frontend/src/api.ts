@@ -5,6 +5,7 @@ import type {
   ProgressEntry,
   RecentItem,
   Show,
+  SubtitleDownloadResult,
   SubtitlesResponse,
 } from './types'
 
@@ -57,4 +58,6 @@ export const api = {
   subtitleUrl: (mediaId: string, trackId: string) =>
     `/api/media/${mediaId}/subtitles/${trackId}`,
   mediaMetadata: (id: string) => request<MediaMetadata>(`/api/media/${id}/metadata`),
+  downloadSubtitles: (id: string) =>
+    request<SubtitleDownloadResult>(`/api/media/${id}/subtitles/download`, { method: 'POST' }),
 }

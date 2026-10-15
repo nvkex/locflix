@@ -12,15 +12,19 @@ function joinParts(parts: Array<string | null | undefined>): string | null {
   return values.length > 0 ? values.join(' · ') : null
 }
 
-export function MediaMetadata({ mediaId }: MediaMetadataProps) {
+export function MediaMetadata({ mediaId, onSubtitlesChanged }: MediaMetadataProps) {
   const [meta, setMeta] = useState<MediaMetadataType | null>(null)
+  const [downloading, setDownloading] = useState(false)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!mediaId) {
       setMeta(null)
+      setDownloadError(null)
       return
     }
     let cancelled = false
+    setDownloadError(null)
     api
       .mediaMetadata(mediaId)
       .then((data) => {
@@ -34,6 +38,22 @@ export function MediaMetadata({ mediaId }: MediaMetadataProps) {
     }
   }, [mediaId])
 
+  async function downloadEnglish() {
+    if (!mediaId || downloading) return
+    setDownloading(true)
+    setDownloadError(null)
+    try {
+      await api.downloadSubtitles(mediaId)
+      const refreshed = await api.mediaMetadata(mediaId)
+      setMeta(refreshed)
+      onSubtitlesChanged?.(true)
+    } catch (err) {
+      setDownloadError(err instanceof Error ? err.message : 'Download failed')
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   if (!mediaId) return null
   if (!meta) {
     return <div className="media-meta-block muted">Loading details…</div>
@@ -44,8 +64,13 @@ export function MediaMetadata({ mediaId }: MediaMetadataProps) {
     ...(meta.quality ? [meta.quality] : []),
     ...meta.audio_languages,
   ]
+  const showDownload = !meta.has_subtitles
 
-  const videoLabel = joinParts([meta.video_codec, meta.video_profile, meta.frame_rate])
+  const videoLabel = joinParts([
+    meta.video_codec,
+    meta.video_profile,
+    meta.frame_rate,
+  ])
   const audioLabel = joinParts([
     meta.audio_languages.length > 0 ? meta.audio_languages.join(', ') : null,
     meta.audio_codec,
@@ -67,7 +92,7 @@ export function MediaMetadata({ mediaId }: MediaMetadataProps) {
     },
   ].filter((row) => Boolean(row.value))
 
-  if (badgeLabels.length === 0 && tableRows.length === 0) return null
+  if (badgeLabels.length === 0 && tableRows.length === 0 && !showDownload) return null
 
   return (
     <div className="media-meta-block">
@@ -92,6 +117,30 @@ export function MediaMetadata({ mediaId }: MediaMetadataProps) {
             ))}
           </tbody>
         </table>
+      ) : null}
+
+      {showDownload ? (
+        <div className="subtitle-download">
+          <button
+            type="button"
+            className="btn"
+            disabled={downloading || !meta.can_download_subtitles}
+            onClick={() => void downloadEnglish()}
+            title={
+              meta.can_download_subtitles
+                ? 'Download English subtitles from OpenSubtitles'
+                : 'Set LOCFLIX_OPENSUBTITLES_API_KEY in .env'
+            }
+          >
+            {downloading ? 'Downloading…' : 'Download English subtitles'}
+          </button>
+          {!meta.can_download_subtitles ? (
+            <p className="muted subtitle-download-hint">
+              Add <code>LOCFLIX_OPENSUBTITLES_API_KEY</code> to enable downloads
+            </p>
+          ) : null}
+          {downloadError ? <p className="error">{downloadError}</p> : null}
+        </div>
       ) : null}
     </div>
   )

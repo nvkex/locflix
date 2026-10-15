@@ -21,6 +21,15 @@ async def init_db(data_dir: Path, db_path: Path) -> None:
             )
             """
         )
+        await db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS subtitle_prefs (
+                media_id TEXT PRIMARY KEY,
+                preferred_language TEXT NOT NULL DEFAULT 'en',
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
         await db.commit()
 
 
@@ -84,3 +93,33 @@ async def delete_progress(media_id: str) -> None:
     async with aiosqlite.connect(_require_db()) as db:
         await db.execute("DELETE FROM watch_progress WHERE media_id = ?", (media_id,))
         await db.commit()
+
+
+async def upsert_subtitle_pref(media_id: str, preferred_language: str, updated_at: str) -> None:
+    async with aiosqlite.connect(_require_db()) as db:
+        await db.execute(
+            """
+            INSERT INTO subtitle_prefs (media_id, preferred_language, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(media_id) DO UPDATE SET
+                preferred_language = excluded.preferred_language,
+                updated_at = excluded.updated_at
+            """,
+            (media_id, preferred_language, updated_at),
+        )
+        await db.commit()
+
+
+async def get_subtitle_pref(media_id: str) -> dict | None:
+    async with aiosqlite.connect(_require_db()) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            """
+            SELECT media_id, preferred_language, updated_at
+            FROM subtitle_prefs
+            WHERE media_id = ?
+            """,
+            (media_id,),
+        )
+        row = await cursor.fetchone()
+        return dict(row) if row else None

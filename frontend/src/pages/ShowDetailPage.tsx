@@ -52,7 +52,12 @@ export function ShowDetailPage() {
           <div className={`poster${show.poster ? ' has-image' : ''}`} style={{ minHeight: 360 }}>
             {show.poster ? <img src={show.poster} alt={show.title} /> : <span>{show.title}</span>}
           </div>
-          <MediaMetadata mediaId={metaEpisode?.id ?? show.id} />
+          <MediaMetadata
+            mediaId={metaEpisode?.id ?? show.id}
+            onSubtitlesChanged={(has) =>
+              setShow((prev) => (prev ? { ...prev, has_subtitles: has } : prev))
+            }
+          />
         </aside>
         <section className="detail-panel glass">
           <h1>{show.title}</h1>

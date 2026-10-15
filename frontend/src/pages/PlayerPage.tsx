@@ -185,9 +185,24 @@ export function PlayerPage() {
     setCcOpen(false)
     api
       .subtitles(id)
-      .then((res) => setExternalTracks(res.tracks))
+      .then((res) => {
+        setExternalTracks(res.tracks)
+        const preferred = (res.preferred_language || '').toLowerCase()
+        if (!preferred) return
+        const fileTracks = res.tracks.filter((track) => track.source === 'external')
+        if (fileTracks.length === 0) return
+        const match =
+          fileTracks.find((track) => (track.language || '').toLowerCase() === preferred) ||
+          fileTracks.find((track) => track.label.toLowerCase().includes(preferred)) ||
+          fileTracks.find((track) => /^(eng|en|english)$/i.test(track.label)) ||
+          fileTracks[0]
+        // Defer until <track> elements mount.
+        window.setTimeout(() => {
+          setActiveTrack({ kind: 'external', track: match })
+        }, 0)
+      })
       .catch(() => setExternalTracks([]))
-  }, [id])
+  }, [id, setActiveTrack])
 
   useEffect(() => {
     const video = videoRef.current

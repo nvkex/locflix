@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     # Free key from https://www.themoviedb.org/settings/api
     tmdb_api_key: str = ""
     fetch_posters_on_scan: bool = True
+    # Free consumer key: https://www.opensubtitles.com/en/consumers
+    opensubtitles_api_key: str = ""
 
     @property
     def cors_origin_list(self) -> list[str]:

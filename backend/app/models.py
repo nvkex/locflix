@@ -110,6 +110,15 @@ class MediaMetadataResponse(BaseModel):
     can_download_subtitles: bool = False
 
 
+class SubtitleDownloadResponse(BaseModel):
+    media_id: str
+    path: str
+    language: str = "en"
+    label: str = "ENG"
+    preferred_language: str = "en"
+    has_subtitles: bool = True
+
+
 class SubtitleTrack(BaseModel):
     id: str
     label: str
@@ -122,3 +131,4 @@ class SubtitlesResponse(BaseModel):
     media_id: str
     tracks: list[SubtitleTrack] = Field(default_factory=list)
     embedded_possible: bool = True
+    preferred_language: str | None = None

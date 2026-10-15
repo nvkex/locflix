@@ -52,7 +52,12 @@ export function MovieDetailPage() {
               <span>{movie.title}</span>
             )}
           </div>
-          <MediaMetadata mediaId={playId ?? movie.id} />
+          <MediaMetadata
+            mediaId={playId ?? movie.id}
+            onSubtitlesChanged={(has) =>
+              setMovie((prev) => (prev ? { ...prev, has_subtitles: has } : prev))
+            }
+          />
         </aside>
         <section className="detail-panel glass">
           <h1>{movie.title}</h1>

@@ -1,8 +1,10 @@
 from fastapi import APIRouter, HTTPException
 
 from app.catalog import catalog
+from app.config import get_settings
 from app.media_meta import MediaMetadata, probe_media
 from app.models import MediaMetadataResponse
+from app.opensubtitles import opensubtitles_configured
 
 router = APIRouter(tags=["metadata"])
 
@@ -28,6 +30,7 @@ async def get_media_metadata(media_id: str) -> MediaMetadataResponse:
         raise HTTPException(status_code=404, detail="Media not in catalog")
 
     meta: MediaMetadata = probe_media(media_id, path)
+    settings = get_settings()
     subtitles = meta.subtitles if meta.has_subtitles else []
     return MediaMetadataResponse(
         media_id=meta.media_id,
@@ -50,5 +53,5 @@ async def get_media_metadata(media_id: str) -> MediaMetadataResponse:
         subtitles=subtitles,
         audio_languages=meta.audio_languages,
         has_subtitles=meta.has_subtitles,
-        can_download_subtitles=False,
+        can_download_subtitles=opensubtitles_configured(settings) and not meta.has_subtitles,
     )

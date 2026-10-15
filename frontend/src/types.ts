@@ -97,6 +97,15 @@ export interface MediaMetadata {
   can_download_subtitles: boolean
 }
 
+export interface SubtitleDownloadResult {
+  media_id: string
+  path: string
+  language: string
+  label: string
+  preferred_language: string
+  has_subtitles: boolean
+}
+
 export interface SubtitleTrack {
   id: string
   label: string
@@ -109,4 +118,5 @@ export interface SubtitlesResponse {
   media_id: string
   tracks: SubtitleTrack[]
   embedded_possible: boolean
+  preferred_language: string | null
 }

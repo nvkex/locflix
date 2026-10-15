@@ -617,6 +617,28 @@ img {
   padding: 0.15rem 0.05rem 0;
 }
 
+.subtitle-download {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: flex-start;
+}
+
+.subtitle-download .btn {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
+
+.subtitle-download-hint {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.subtitle-download-hint code {
+  font-size: 0.78em;
+}
+
 .meta-badge {
   display: inline-flex;
   align-items: center;
