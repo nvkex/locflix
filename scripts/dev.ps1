@@ -4,7 +4,7 @@ $root = Split-Path -Parent $PSScriptRoot
 
 $venvActivate = Join-Path $root "backend\.venv\Scripts\Activate.ps1"
 if (-not (Test-Path $venvActivate)) {
-  Write-Error "Missing backend\.venv — create and install deps first."
+  Write-Error "Missing backend\.venv - create and install deps first."
 }
 
 Start-Process powershell -ArgumentList @(

@@ -97,7 +97,8 @@ File badges: quality (`1080p` / `720p`) and audio languages. A borderless table 
 | Variable | Role |
 |----------|------|
 | `LOCFLIX_MOVIES_DIR` / `LOCFLIX_SERIES_DIR` | Library roots |
-| `LOCFLIX_TMDB_API_KEY` | Optional poster enrichment |
+| `LOCFLIX_TMDB_API_KEY` | Optional poster enrichment / detail metadata |
+| `LOCFLIX_OPENSUBTITLES_API_KEY` | Optional English subtitle downloads |
 | `LOCFLIX_FETCH_POSTERS_ON_SCAN` | Background TMDB on scan/start |
 | `LOCFLIX_SCAN_ON_START` | Auto-scan at boot |
 | `LOCFLIX_DATA_DIR` | SQLite + poster/sub caches |
@@ -106,4 +107,4 @@ File badges: quality (`1080p` / `720p`) and audio languages. A borderless table 
 
 ## What Locflix does *not* do
 
-No transcoding for playback, no subtitle downloads, no accounts/auth, no cloud library.
+No transcoding for playback, no accounts/auth, no cloud library.

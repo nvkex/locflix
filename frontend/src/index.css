@@ -121,6 +121,13 @@ img {
   border-left: none;
   border-right: none;
   border-top: none;
+  /* Keep sticky blur from leaking a ghost strip onto panels below on hover */
+  isolation: isolate;
+  transform: translateZ(0);
+}
+
+.nav.glass {
+  background: rgba(11, 13, 18, 0.9);
 }
 
 .brand {
@@ -749,6 +756,13 @@ img {
 .detail-panel {
   padding: 1.5rem;
   border-radius: var(--radius-lg);
+}
+
+/* Avoid backdrop-filter + sticky header ghost bar at the top of this panel */
+.detail-panel.glass {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(16, 20, 28, 0.94);
 }
 
 .detail-panel h1 {
