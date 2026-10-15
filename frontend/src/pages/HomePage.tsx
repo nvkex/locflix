@@ -172,6 +172,7 @@ export function HomePage() {
                 to={`/watch/${item.media_id}`}
                 title={item.title ?? 'Resume'}
                 subtitle={`${stamp} in`}
+                poster={item.poster}
               />
             )
           })}

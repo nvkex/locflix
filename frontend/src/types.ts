@@ -66,6 +66,7 @@ export interface ProgressEntry {
   updated_at: string
   title: string | null
   kind: string | null
+  poster: string | null
 }
 
 export interface SubtitleTrack {

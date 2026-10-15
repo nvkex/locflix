@@ -447,8 +447,8 @@ img {
 .row {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(150px, 180px);
-  gap: 1rem;
+  grid-auto-columns: 210px;
+  gap: 1.1rem;
   overflow-x: auto;
   overflow-y: hidden;
   padding: 0.85rem 0.5rem 1rem;
@@ -461,8 +461,9 @@ img {
 
 .media-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 1.25rem 1rem;
+  grid-template-columns: repeat(auto-fill, 210px);
+  justify-content: start;
+  gap: 1.35rem 1.1rem;
   padding: 0.85rem 0.35rem 0.5rem;
   overflow: visible;
 }
