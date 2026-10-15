@@ -20,6 +20,7 @@ class Catalog:
     _show_by_id: dict[str, Show] = field(default_factory=dict)
     _episode_by_id: dict[str, Episode] = field(default_factory=dict)
     _title_by_file_id: dict[str, tuple[str, str]] = field(default_factory=dict)
+    _parent_by_file_id: dict[str, tuple[str, str]] = field(default_factory=dict)
 
     def rebuild_indexes(self) -> None:
         self._files_by_id.clear()
@@ -27,12 +28,14 @@ class Catalog:
         self._show_by_id.clear()
         self._episode_by_id.clear()
         self._title_by_file_id.clear()
+        self._parent_by_file_id.clear()
 
         for movie in self.movies:
             self._movie_by_id[movie.id] = movie
             for vf in movie.files:
                 self._files_by_id[vf.id] = Path(vf.path)
                 self._title_by_file_id[vf.id] = ("movie_file", movie.title)
+                self._parent_by_file_id[vf.id] = ("movie", movie.id)
 
         for show in self.shows:
             self._show_by_id[show.id] = show
@@ -42,6 +45,7 @@ class Catalog:
                     self._files_by_id[episode.id] = Path(episode.path)
                     label = f"{show.title} · S{episode.season:02d}E{episode.episode:02d}"
                     self._title_by_file_id[episode.id] = ("episode", label)
+                    self._parent_by_file_id[episode.id] = ("show", show.id)
 
     def get_movie(self, movie_id: str) -> Movie | None:
         return self._movie_by_id.get(movie_id)
@@ -54,6 +58,17 @@ class Catalog:
 
     def get_title_meta(self, media_id: str) -> tuple[str, str] | None:
         return self._title_by_file_id.get(media_id)
+
+    def get_poster_for_file(self, media_id: str) -> str | None:
+        parent = self._parent_by_file_id.get(media_id)
+        if parent is None:
+            return None
+        kind, parent_id = parent
+        if kind == "movie":
+            movie = self._movie_by_id.get(parent_id)
+            return movie.poster if movie else None
+        show = self._show_by_id.get(parent_id)
+        return show.poster if show else None
 
     def search(self, query: str) -> dict[str, list]:
         q = query.strip().lower()

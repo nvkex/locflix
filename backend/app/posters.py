@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import shutil
 import subprocess
 import urllib.error
 import urllib.parse
 import urllib.request
+from difflib import SequenceMatcher
 from pathlib import Path
 
 from app.config import Settings
@@ -18,6 +20,76 @@ logger = logging.getLogger(__name__)
 
 TMDB_API = "https://api.themoviedb.org/3"
 TMDB_IMAGE = "https://image.tmdb.org/t/p/w500"
+_TITLE_NORM_RE = re.compile(r"[^a-z0-9]+")
+
+
+def _normalize_title(value: str) -> str:
+    return re.sub(r"\s+", " ", _TITLE_NORM_RE.sub(" ", value.lower())).strip()
+
+
+def _result_year(result: dict, kind: str) -> int | None:
+    date = result.get("release_date") if kind == "movie" else result.get("first_air_date")
+    if not date or len(date) < 4 or not date[:4].isdigit():
+        return None
+    return int(date[:4])
+
+
+def pick_best_tmdb_result(
+    results: list[dict],
+    query: str,
+    year: int | None,
+    kind: str,
+    *,
+    min_score: float = 0.55,
+) -> dict | None:
+    """
+    Choose the closest title match instead of blindly trusting TMDB rank order.
+
+    Example: query \"Inglourious Bastards\" ranks Indonesian film Merah Putih first,
+    while \"Inglourious Basterds\" is the intended 2009 match.
+    """
+    query_norm = _normalize_title(query)
+    if not query_norm or not results:
+        return None
+
+    best: dict | None = None
+    best_score = -1.0
+
+    for result in results:
+        if kind == "movie":
+            candidates = [result.get("title") or "", result.get("original_title") or ""]
+        else:
+            candidates = [result.get("name") or "", result.get("original_name") or ""]
+
+        title_score = 0.0
+        for candidate in candidates:
+            candidate_norm = _normalize_title(candidate)
+            if not candidate_norm:
+                continue
+            ratio = SequenceMatcher(None, query_norm, candidate_norm).ratio()
+            if candidate_norm == query_norm:
+                ratio = 1.0
+            elif query_norm in candidate_norm or candidate_norm in query_norm:
+                ratio = max(ratio, 0.92)
+            title_score = max(title_score, ratio)
+
+        score = title_score
+        result_year = _result_year(result, kind)
+        if year is not None and result_year is not None:
+            if result_year == year:
+                score += 0.12
+            elif abs(result_year - year) == 1:
+                score += 0.04
+            else:
+                score -= 0.08
+
+        if score > best_score:
+            best_score = score
+            best = result
+
+    if best is None or best_score < min_score:
+        return None
+    return best
 
 
 def posters_dir(settings: Settings) -> Path:
@@ -205,19 +277,23 @@ def try_tmdb_poster(
     if not payload:
         return False
 
-    results = payload.get("results") or []
-    if not results:
+    results = list(payload.get("results") or [])
+    if not results and year is not None:
         # Retry without year if year-constrained search missed
-        if year is not None:
-            params.pop("year", None)
-            params.pop("first_air_date_year", None)
-            url = f"{TMDB_API}/{endpoint}?{urllib.parse.urlencode(params)}"
-            payload = _http_get_json(url)
-            results = (payload or {}).get("results") or []
+        params.pop("year", None)
+        params.pop("first_air_date_year", None)
+        url = f"{TMDB_API}/{endpoint}?{urllib.parse.urlencode(params)}"
+        payload = _http_get_json(url)
+        results = list((payload or {}).get("results") or [])
     if not results:
         return False
 
-    poster_path = results[0].get("poster_path")
+    best = pick_best_tmdb_result(results, title, year, kind)
+    if best is None:
+        logger.info("No close TMDB match for %r (%s, year=%s)", title, kind, year)
+        return False
+
+    poster_path = best.get("poster_path")
     if not poster_path:
         return False
 

@@ -74,6 +74,7 @@ class ProgressEntry(BaseModel):
     updated_at: str
     title: str | None = None
     kind: str | None = None  # movie_file | episode
+    poster: str | None = None
 
 
 class ProgressUpdate(BaseModel):
