@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { MediaMetadata } from '../components/MediaMetadata'
+import { TmdbDetails } from '../components/TmdbDetails'
 import type { Show } from '../types'
 
 export function ShowDetailPage() {
@@ -52,6 +53,7 @@ export function ShowDetailPage() {
           <div className={`poster${show.poster ? ' has-image' : ''}`} style={{ minHeight: 360 }}>
             {show.poster ? <img src={show.poster} alt={show.title} /> : <span>{show.title}</span>}
           </div>
+          <TmdbDetails kind="series" id={show.id} />
           <MediaMetadata
             mediaId={metaEpisode?.id ?? show.id}
             onSubtitlesChanged={(has) =>

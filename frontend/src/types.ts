@@ -106,6 +106,23 @@ export interface SubtitleDownloadResult {
   has_subtitles: boolean
 }
 
+export interface TmdbInfo {
+  tmdb_id: number
+  kind: string
+  title: string
+  overview: string | null
+  tagline: string | null
+  rating: number | null
+  vote_count: number | null
+  genres: string[]
+  release_year: number | null
+  release_date: string | null
+  runtime_minutes: number | null
+  directors: string[]
+  cast: string[]
+  seasons: number | null
+}
+
 export interface SubtitleTrack {
   id: string
   label: string

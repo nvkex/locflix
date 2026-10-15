@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { MediaMetadata } from '../components/MediaMetadata'
+import { TmdbDetails } from '../components/TmdbDetails'
 import type { Movie } from '../types'
 
 function formatSize(bytes: number): string {
@@ -52,6 +53,7 @@ export function MovieDetailPage() {
               <span>{movie.title}</span>
             )}
           </div>
+          <TmdbDetails kind="movie" id={movie.id} />
           <MediaMetadata
             mediaId={playId ?? movie.id}
             onSubtitlesChanged={(has) =>

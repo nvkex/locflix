@@ -9,7 +9,7 @@ from app.catalog import catalog, rescan
 from app.config import get_settings
 from app.db import init_db
 from app.posters import enrich_all_posters
-from app.routers import health, library, metadata, posters, progress, stream, subtitles
+from app.routers import health, library, metadata, posters, progress, stream, subtitles, tmdb
 
 logger = logging.getLogger(__name__)
 
@@ -53,4 +53,5 @@ app.include_router(stream.router, prefix="/api")
 app.include_router(progress.router, prefix="/api")
 app.include_router(subtitles.router, prefix="/api")
 app.include_router(metadata.router, prefix="/api")
+app.include_router(tmdb.router, prefix="/api")
 app.include_router(posters.router, prefix="/api")

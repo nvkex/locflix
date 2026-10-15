@@ -7,6 +7,7 @@ import type {
   Show,
   SubtitleDownloadResult,
   SubtitlesResponse,
+  TmdbInfo,
 } from './types'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -60,4 +61,6 @@ export const api = {
   mediaMetadata: (id: string) => request<MediaMetadata>(`/api/media/${id}/metadata`),
   downloadSubtitles: (id: string) =>
     request<SubtitleDownloadResult>(`/api/media/${id}/subtitles/download`, { method: 'POST' }),
+  tmdbInfo: (kind: 'movie' | 'series', id: string) =>
+    request<TmdbInfo>(kind === 'movie' ? `/api/movies/${id}/tmdb` : `/api/series/${id}/tmdb`),
 }

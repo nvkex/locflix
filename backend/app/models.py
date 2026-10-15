@@ -119,6 +119,23 @@ class SubtitleDownloadResponse(BaseModel):
     has_subtitles: bool = True
 
 
+class TmdbInfo(BaseModel):
+    tmdb_id: int
+    kind: str  # movie | series
+    title: str
+    overview: str | None = None
+    tagline: str | None = None
+    rating: float | None = None
+    vote_count: int | None = None
+    genres: list[str] = Field(default_factory=list)
+    release_year: int | None = None
+    release_date: str | None = None
+    runtime_minutes: int | None = None
+    directors: list[str] = Field(default_factory=list)
+    cast: list[str] = Field(default_factory=list)
+    seasons: int | None = None
+
+
 class SubtitleTrack(BaseModel):
     id: str
     label: str
