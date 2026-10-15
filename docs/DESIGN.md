@@ -133,13 +133,14 @@ Movies/
 
 ### Series
 
-Each immediate subdirectory of the Series root is one show (folder name = display title). Episodes require `SXXEYY` in the filename (case-insensitive):
+Each immediate subdirectory of the Series root is one show (folder name = display title).
 
-```regex
-S(?P<season>\d{1,2})E(?P<episode>\d{1,2})
-```
+Episode resolution order:
 
-Nested season folders are optional; season/episode come from the filename. Non-matching videos are skipped.
+1. `SXXEYY` in the filename (case-insensitive)  
+2. Else season from a nested folder / show name (`Season 4`, `Season 4 Part 1`, `S04`) plus a bare episode number in the filename (`Show - 60.mkv`, `Episode 12`, `E07`; ranges like `88-91` use the first number)
+
+Nested season folders are supported. Videos that match neither pattern are skipped.
 
 ### Supported video formats
 

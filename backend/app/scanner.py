@@ -10,6 +10,15 @@ from app.models import Episode, Movie, Season, Show, VideoFile
 VIDEO_EXTENSIONS = {".mp4", ".webm", ".mkv", ".avi", ".mov", ".m4v"}
 POSTER_NAMES = ("poster.jpg", "poster.jpeg", "poster.png", "folder.jpg", "folder.png")
 EPISODE_RE = re.compile(r"S(?P<season>\d{1,2})E(?P<episode>\d{1,2})", re.IGNORECASE)
+# Folder names like "Season 4", "Season 4 Part 1", "S04"
+SEASON_FOLDER_RE = re.compile(r"(?:season|series)\s*(?P<season>\d{1,2})\b", re.IGNORECASE)
+SEASON_TOKEN_RE = re.compile(r"(?<![A-Za-z0-9])S(?P<season>\d{1,2})(?![A-Za-zEe0-9])", re.IGNORECASE)
+# Absolute / bare episode numbers: "Show - 60.mkv", "Episode 12", "E12", "Show - 88-91.mkv"
+EPISODE_WORD_RE = re.compile(r"\b(?:episode|ep|e)\s*(?P<episode>\d{1,3})\b", re.IGNORECASE)
+EPISODE_DASH_RE = re.compile(
+    r"\s[-–]\s*(?P<episode>\d{1,3})(?:\s*[-–]\s*\d{1,3})?(?:\s*\.|$)",
+    re.IGNORECASE,
+)
 
 
 def is_video(path: Path) -> bool:
@@ -151,10 +160,87 @@ def scan_movies(movies_dir: Path) -> list[Movie]:
 
 
 def parse_episode(filename: str) -> tuple[int, int] | None:
+    """Parse classic ``SXXEYY`` tags from a filename."""
     match = EPISODE_RE.search(filename)
     if not match:
         return None
     return int(match.group("season")), int(match.group("episode"))
+
+
+def infer_season_number(text: str) -> int | None:
+    match = SEASON_FOLDER_RE.search(text)
+    if match:
+        return int(match.group("season"))
+    match = SEASON_TOKEN_RE.search(text)
+    if match:
+        return int(match.group("season"))
+    return None
+
+
+def infer_season_from_path(video: Path, show_root: Path) -> int | None:
+    """
+    Infer season from nested folders (and optionally the show folder name).
+
+    Examples:
+    - ``Show/Season 02/ep.mkv``
+    - ``Show/[Group] Show (Season 4 Part 1)/ep.mkv``
+    - ``Show (Season 2)/ep.mkv``
+    """
+    candidates: list[str] = []
+    try:
+        relative = video.relative_to(show_root)
+        candidates.extend(reversed(relative.parts[:-1]))
+    except ValueError:
+        pass
+    candidates.append(show_root.name)
+    for part in candidates:
+        season = infer_season_number(part)
+        if season is not None:
+            return season
+    return None
+
+
+def infer_episode_number(filename: str) -> int | None:
+    """
+    Infer a bare episode number when ``SXXEYY`` is absent.
+
+    Supports ``Show - 60.mkv``, ``Show - 88-91.mkv`` (uses first number),
+    ``Episode 12``, ``E12``, ``EP12``.
+    """
+    stem = Path(filename).stem
+    match = EPISODE_WORD_RE.search(stem)
+    if match:
+        return int(match.group("episode"))
+    match = EPISODE_DASH_RE.search(filename if filename.endswith(Path(filename).suffix) else f"{stem}.")
+    if match:
+        return int(match.group("episode"))
+    # Also try against the stem alone with a synthetic extension boundary
+    match = EPISODE_DASH_RE.search(f"{stem}.")
+    if match:
+        return int(match.group("episode"))
+    return None
+
+
+def resolve_episode(video: Path, show_root: Path) -> tuple[int, int] | None:
+    """
+    Resolve season/episode for a video under a show folder.
+
+    Priority:
+    1. ``SXXEYY`` in the filename
+    2. Season from parent/show folder name + bare episode number in filename
+    """
+    tagged = parse_episode(video.name)
+    if tagged is not None:
+        return tagged
+
+    episode_num = infer_episode_number(video.name)
+    if episode_num is None:
+        return None
+
+    season_num = infer_season_from_path(video, show_root)
+    if season_num is None:
+        season_num = 1
+    return season_num, episode_num
 
 
 def scan_series(series_dir: Path) -> list[Show]:
@@ -169,7 +255,7 @@ def scan_series(series_dir: Path) -> list[Show]:
         by_season: dict[int, list[Episode]] = {}
         matched_videos: list[Path] = []
         for video in iter_videos(child):
-            parsed = parse_episode(video.name)
+            parsed = resolve_episode(video, child)
             if parsed is None:
                 continue
             matched_videos.append(video)

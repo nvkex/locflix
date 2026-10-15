@@ -1,6 +1,13 @@
 from pathlib import Path
 
-from app.scanner import parse_episode, scan_movies, scan_series
+from app.scanner import (
+    infer_episode_number,
+    infer_season_from_path,
+    parse_episode,
+    resolve_episode,
+    scan_movies,
+    scan_series,
+)
 
 
 def test_parse_episode_variants():
@@ -8,6 +15,24 @@ def test_parse_episode_variants():
     assert parse_episode("bb.s1e2.1080p.mkv") == (1, 2)
     assert parse_episode("anything_S02E05_extra.mp4") == (2, 5)
     assert parse_episode("movie.without.tags.mkv") is None
+
+
+def test_infer_episode_number_from_dash_and_words():
+    assert infer_episode_number("[Anime Time] Attack On Titan - 60.mkv") == 60
+    assert infer_episode_number("[Anime Time] Attack On Titan - 88-91.mkv") == 88
+    assert infer_episode_number("Show Episode 12.mp4") == 12
+    assert infer_episode_number("Show E07.mkv") == 7
+    assert infer_episode_number("random.trailer.mkv") is None
+
+
+def test_infer_season_from_nested_folder(tmp_path: Path):
+    show = tmp_path / "Attack On Titan"
+    season = show / "[Anime Time] Attack On Titan (Season 4 Part 1)"
+    season.mkdir(parents=True)
+    video = season / "[Anime Time] Attack On Titan - 60.mkv"
+    video.write_bytes(b"x")
+    assert infer_season_from_path(video, show) == 4
+    assert resolve_episode(video, show) == (4, 60)
 
 
 def test_scan_movies_includes_all_videos(tmp_path: Path):
@@ -46,3 +71,24 @@ def test_scan_series_regex_only(tmp_path: Path):
     assert [s.number for s in shows[0].seasons] == [1, 2]
     assert shows[0].seasons[0].episodes[0].episode == 1
     assert shows[0].seasons[1].episodes[0].episode == 5
+
+
+def test_scan_series_nested_season_folders_with_bare_episode_numbers(tmp_path: Path):
+    show = tmp_path / "Attack On Titan"
+    part1 = show / "[Anime Time] Attack On Titan (Season 4 Part 1)"
+    part2 = show / "[Anime Time] Attack On Titan (Season 4 Part 2)"
+    part1.mkdir(parents=True)
+    part2.mkdir(parents=True)
+    (part1 / "[Anime Time] Attack On Titan - 60.mkv").write_bytes(b"a" * 10)
+    (part1 / "[Anime Time] Attack On Titan - 61.mkv").write_bytes(b"b" * 10)
+    (part2 / "[Anime Time] Attack On Titan - 76.mkv").write_bytes(b"c" * 10)
+    (part2 / "[Anime Time] Attack On Titan - 88-91.mkv").write_bytes(b"d" * 10)
+    (show / "poster.jpg").write_bytes(b"img")
+
+    shows = scan_series(tmp_path)
+    assert len(shows) == 1
+    assert shows[0].title == "Attack On Titan"
+    assert shows[0].episode_count == 4
+    assert [s.number for s in shows[0].seasons] == [4]
+    episodes = [ep.episode for ep in shows[0].seasons[0].episodes]
+    assert episodes == [60, 61, 76, 88]
