@@ -16,6 +16,7 @@ class Movie(BaseModel):
     files: list[VideoFile] = Field(default_factory=list)
     default_file_id: str | None = None
     added_at: str | None = None
+    has_subtitles: bool = False
 
 
 class Episode(BaseModel):
@@ -41,6 +42,7 @@ class Show(BaseModel):
     seasons: list[Season] = Field(default_factory=list)
     episode_count: int = 0
     added_at: str | None = None
+    has_subtitles: bool = False
 
 
 class RecentItem(BaseModel):
@@ -51,6 +53,7 @@ class RecentItem(BaseModel):
     episode_count: int | None = None
     default_file_id: str | None = None
     poster: str | None = None
+    has_subtitles: bool = False
 
 
 class LibrarySummary(BaseModel):
@@ -75,11 +78,36 @@ class ProgressEntry(BaseModel):
     title: str | None = None
     kind: str | None = None  # movie_file | episode
     poster: str | None = None
+    has_subtitles: bool = False
 
 
 class ProgressUpdate(BaseModel):
     position_seconds: float
     duration_seconds: float | None = None
+
+
+class MediaMetadataResponse(BaseModel):
+    media_id: str
+    quality: str | None = None
+    resolution: str | None = None
+    width: int | None = None
+    height: int | None = None
+    duration_seconds: float | None = None
+    duration_label: str | None = None
+    container: str | None = None
+    video_codec: str | None = None
+    video_profile: str | None = None
+    frame_rate: str | None = None
+    audio_codec: str | None = None
+    audio_channels: str | None = None
+    sample_rate: str | None = None
+    bitrate_label: str | None = None
+    size_bytes: int | None = None
+    size_label: str | None = None
+    subtitles: list[str] = Field(default_factory=list)
+    audio_languages: list[str] = Field(default_factory=list)
+    has_subtitles: bool = False
+    can_download_subtitles: bool = False
 
 
 class SubtitleTrack(BaseModel):

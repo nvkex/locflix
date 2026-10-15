@@ -33,6 +33,7 @@ async def get_all_progress() -> list[ProgressEntry]:
                 title=title,
                 kind=kind,
                 poster=catalog.get_poster_for_file(row["media_id"]),
+                has_subtitles=catalog.get_has_subtitles_for_file(row["media_id"]),
             )
         )
     return entries
@@ -55,6 +56,7 @@ async def get_one_progress(media_id: str) -> ProgressEntry:
         title=title,
         kind=kind,
         poster=catalog.get_poster_for_file(media_id),
+        has_subtitles=catalog.get_has_subtitles_for_file(media_id),
     )
 
 
@@ -87,4 +89,5 @@ async def put_progress(media_id: str, body: ProgressUpdate, response: Response):
         title=title,
         kind=kind,
         poster=catalog.get_poster_for_file(media_id),
+        has_subtitles=catalog.get_has_subtitles_for_file(media_id),
     )

@@ -6,9 +6,10 @@ interface PosterCardProps {
   title: string
   subtitle?: string
   poster?: string | null
+  hasSubtitles?: boolean
 }
 
-export function PosterCard({ to, title, subtitle, poster }: PosterCardProps) {
+export function PosterCard({ to, title, subtitle, poster, hasSubtitles = false }: PosterCardProps) {
   const [imgFailed, setImgFailed] = useState(false)
   const showImage = Boolean(poster) && !imgFailed
 
@@ -20,6 +21,11 @@ export function PosterCard({ to, title, subtitle, poster }: PosterCardProps) {
         ) : (
           <span>{title}</span>
         )}
+        {hasSubtitles ? (
+          <span className="poster-cc" title="Subtitles available">
+            CC
+          </span>
+        ) : null}
       </div>
       <div className="poster-caption">
         <h3>{title}</h3>

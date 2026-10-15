@@ -39,6 +39,7 @@ export function SearchPage() {
               to={`/movies/${movie.id}`}
               title={movie.title}
               poster={movie.poster}
+              hasSubtitles={movie.has_subtitles}
             />
           ))}
         </div>
@@ -53,6 +54,7 @@ export function SearchPage() {
               to={`/series/${show.id}`}
               title={show.title}
               poster={show.poster}
+              hasSubtitles={show.has_subtitles}
             />
           ))}
         </div>

@@ -26,6 +26,7 @@ export function SeriesPage() {
             title={show.title}
             subtitle={`${show.episode_count} episodes`}
             poster={show.poster}
+            hasSubtitles={show.has_subtitles}
           />
         ))}
       </div>

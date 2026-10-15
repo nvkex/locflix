@@ -10,7 +10,7 @@ Brief how-it-works for the important behaviors. Companion to [DESIGN.md](DESIGN.
 |------|------|
 | **Movie (folder)** | Each subfolder of Movies = one title. All videos inside are included. |
 | **Movie (loose)** | A video file directly in the Movies root = its own title. |
-| **Series** | Each subfolder of Series = one show. Episodes need `SXXEYY` in the filename. |
+| **Series** | Each subfolder of Series = one show. Episodes via `SXXEYY`, or nested `Season N` folders + bare numbers (`Show - 60.mkv`). |
 
 IDs are stable hashes of absolute paths. Default Play for a movie is the largest file.
 
@@ -78,7 +78,15 @@ Continue Watching uses the **parent** movie/show poster (progress keys are file/
 1. **External** — `.srt` / `.vtt` beside the video (same basename or language suffix; also `Subs/` folders)  
 2. **Embedded** — listed with ffprobe, extracted to WebVTT with ffmpeg, cached under `data/subs/`  
 
-Player exposes a **CC** menu and caption size (localStorage).
+Player exposes a **CC** menu and caption size (localStorage). Poster cards show a **CC** badge when a title has available subtitles.
+
+---
+
+## Detail metadata
+
+Movie/series detail pages load `GET /api/media/{id}/metadata` (default/playable file) and show, under the poster (no section title):
+
+File badges: quality (`1080p` / `720p`) and audio languages. A borderless table lists duration, size, container, video/audio codecs, frame rate, bitrate, and subtitles (via ffprobe).
 
 ---
 

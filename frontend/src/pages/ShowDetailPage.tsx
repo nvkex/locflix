@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
+import { MediaMetadata } from '../components/MediaMetadata'
 import type { Show } from '../types'
 
 export function ShowDetailPage() {
@@ -42,13 +43,17 @@ export function ShowDetailPage() {
   }
 
   const firstEpisode = show.seasons[0]?.episodes[0]
+  const metaEpisode = season?.episodes[0] ?? firstEpisode
 
   return (
     <main className="page">
       <div className="detail-layout">
-        <div className={`poster${show.poster ? ' has-image' : ''}`} style={{ minHeight: 360 }}>
-          {show.poster ? <img src={show.poster} alt={show.title} /> : <span>{show.title}</span>}
-        </div>
+        <aside className="detail-aside">
+          <div className={`poster${show.poster ? ' has-image' : ''}`} style={{ minHeight: 360 }}>
+            {show.poster ? <img src={show.poster} alt={show.title} /> : <span>{show.title}</span>}
+          </div>
+          <MediaMetadata mediaId={metaEpisode?.id ?? show.id} />
+        </aside>
         <section className="detail-panel glass">
           <h1>{show.title}</h1>
           <p className="muted">

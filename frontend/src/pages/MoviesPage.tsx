@@ -25,6 +25,7 @@ export function MoviesPage() {
             to={`/movies/${movie.id}`}
             title={movie.title}
             poster={movie.poster}
+            hasSubtitles={movie.has_subtitles}
           />
         ))}
       </div>

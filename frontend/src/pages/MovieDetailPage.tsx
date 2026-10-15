@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
+import { MediaMetadata } from '../components/MediaMetadata'
 import type { Movie } from '../types'
 
 function formatSize(bytes: number): string {
@@ -43,13 +44,16 @@ export function MovieDetailPage() {
   return (
     <main className="page">
       <div className="detail-layout">
-        <div className={`poster${movie.poster ? ' has-image' : ''}`} style={{ minHeight: 360 }}>
-          {movie.poster ? (
-            <img src={movie.poster} alt={movie.title} />
-          ) : (
-            <span>{movie.title}</span>
-          )}
-        </div>
+        <aside className="detail-aside">
+          <div className={`poster${movie.poster ? ' has-image' : ''}`} style={{ minHeight: 360 }}>
+            {movie.poster ? (
+              <img src={movie.poster} alt={movie.title} />
+            ) : (
+              <span>{movie.title}</span>
+            )}
+          </div>
+          <MediaMetadata mediaId={playId ?? movie.id} />
+        </aside>
         <section className="detail-panel glass">
           <h1>{movie.title}</h1>
           <p className="muted">{movie.files.length} video file{movie.files.length === 1 ? '' : 's'} in this folder</p>

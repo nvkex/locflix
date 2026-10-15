@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from app.config import get_settings
+from app.media_meta import attach_subtitle_flags, video_has_external_subtitles
 from app.models import Episode, Movie, RecentItem, Show
 from app.posters import attach_cached_posters, enrich_all_posters
 from app.scanner import scan_movies, scan_series
@@ -70,6 +71,29 @@ class Catalog:
         show = self._show_by_id.get(parent_id)
         return show.poster if show else None
 
+    def get_episode(self, episode_id: str) -> Episode | None:
+        return self._episode_by_id.get(episode_id)
+
+    def get_parent_for_file(self, media_id: str) -> tuple[str, str] | None:
+        return self._parent_by_file_id.get(media_id)
+
+    def get_has_subtitles_for_file(self, media_id: str) -> bool:
+        parent = self._parent_by_file_id.get(media_id)
+        if parent is not None:
+            kind, parent_id = parent
+            if kind == "movie":
+                movie = self._movie_by_id.get(parent_id)
+                if movie is not None and movie.has_subtitles:
+                    return True
+            else:
+                show = self._show_by_id.get(parent_id)
+                if show is not None and show.has_subtitles:
+                    return True
+        path = self._files_by_id.get(media_id)
+        if path is None:
+            return False
+        return video_has_external_subtitles(path)
+
     def search(self, query: str) -> dict[str, list]:
         q = query.strip().lower()
         if not q:
@@ -92,6 +116,7 @@ class Catalog:
                     added_at=movie.added_at,
                     default_file_id=movie.default_file_id,
                     poster=movie.poster,
+                    has_subtitles=movie.has_subtitles,
                 )
             )
         for show in self.shows:
@@ -105,6 +130,7 @@ class Catalog:
                     added_at=show.added_at,
                     episode_count=show.episode_count,
                     poster=show.poster,
+                    has_subtitles=show.has_subtitles,
                 )
             )
         items.sort(key=lambda item: item.added_at, reverse=True)
@@ -121,6 +147,7 @@ def rescan(movies_dir: Path, series_dir: Path, *, fetch_posters: bool | None = N
     settings = get_settings()
     # Always wire up posters already on disk (fast).
     attach_cached_posters(settings, catalog.movies, catalog.shows)
+    attach_subtitle_flags(catalog.movies, catalog.shows)
     should_fetch = settings.fetch_posters_on_scan if fetch_posters is None else fetch_posters
     if should_fetch:
         enrich_all_posters(settings, catalog.movies, catalog.shows, force=False)

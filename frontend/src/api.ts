@@ -1,5 +1,6 @@
 import type {
   LibrarySummary,
+  MediaMetadata,
   Movie,
   ProgressEntry,
   RecentItem,
@@ -55,4 +56,5 @@ export const api = {
   subtitles: (id: string) => request<SubtitlesResponse>(`/api/media/${id}/subtitles`),
   subtitleUrl: (mediaId: string, trackId: string) =>
     `/api/media/${mediaId}/subtitles/${trackId}`,
+  mediaMetadata: (id: string) => request<MediaMetadata>(`/api/media/${id}/metadata`),
 }

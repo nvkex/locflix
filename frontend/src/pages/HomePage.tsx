@@ -173,6 +173,7 @@ export function HomePage() {
                 title={item.title ?? 'Resume'}
                 subtitle={`${stamp} in`}
                 poster={item.poster}
+                hasSubtitles={item.has_subtitles}
               />
             )
           })}
@@ -189,6 +190,7 @@ export function HomePage() {
               to={`/movies/${movie.id}`}
               title={movie.title}
               poster={movie.poster}
+              hasSubtitles={movie.has_subtitles}
             />
           ))
         )}
@@ -205,6 +207,7 @@ export function HomePage() {
               title={show.title}
               subtitle={`${show.episode_count} episodes`}
               poster={show.poster}
+              hasSubtitles={show.has_subtitles}
             />
           ))
         )}
