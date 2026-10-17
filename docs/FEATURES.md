@@ -85,8 +85,8 @@ Two roles on the same Wi‑Fi/LAN:
 Flow:
 
 1. Seeder opens **LAN** → Start sharing → approve the consent modal once for this session  
-2. Seeder appears via UDP discovery (`LOCFLIX_LAN_DISCOVERY_PORT`, default `8788`)  
-3. Leecher opens **LAN** → Scan LAN sources → Connect (waits if seeder has not consented yet)  
+2. Leecher opens **LAN** → **Scan LAN sources** (UDP best-effort + HTTP scan of the local `/24`, since many Wi‑Fi routers block UDP broadcast) → Connect  
+3. If scan still misses a host, use **Connect by IP** with the seeder LAN address  
 4. Leecher header shows **Streaming from {seeder name}**; catalog/player hit the seeder API  
 5. Seeder **LAN** page lists connected devices and what they are playing  
 
