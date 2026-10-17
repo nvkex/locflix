@@ -11,7 +11,7 @@ Default libraries (configurable):
 | Movies | `D:\TV\Movies` |
 | Series | `D:\TV\Series` |
 
-> **Status:** Usable MVP — catalog, glass UI, streaming player, continue watching, subtitles, and TMDB posters are implemented. Docker packaging is still optional/future.  
+> **Status:** Usable MVP — catalog, multi-theme UI, streaming player, continue watching, subtitles, and TMDB posters are implemented. Docker packaging is still optional/future.  
 > See [docs/DESIGN.md](docs/DESIGN.md) and [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md).
 
 ---
@@ -19,7 +19,7 @@ Default libraries (configurable):
 ## Features
 
 - Netflix-like home (recently added hero), rows, title detail, and fullscreen player
-- iPhone-inspired **glass** UI
+- Multi-theme UI: **Glass** (default) and **GenUI** (Veriguard-style cyber-security)
 - Catalog from local **Movies** and **Series** directories
 - Movies as **folders** or **loose** `.mp4` / `.mkv` / etc. in the Movies root
 - Season / episode navigation (`SXXEYY` filenames)

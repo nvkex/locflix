@@ -58,6 +58,15 @@ Continue Watching uses the **parent** movie/show poster (progress keys are file/
 
 ---
 
+## Themes
+
+Locflix supports multiple UI themes via a switcher in the nav (stored in `localStorage` as `locflix.theme`):
+
+| Theme | Look |
+|-------|------|
+| **Glass UI** (default) | Soft glassmorphism, rounded controls, cool blue accents |
+| **GenUI** | Veriguard-style human-auth / cyber-security HUD — neon green, monospace, scanlines, angular panels |
+
 ## Streaming
 
 `GET /api/stream/{id}` serves the file with HTTP **Range** (seekable `206`). Paths must resolve under the configured Movies/Series roots.
