@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { api } from '../api'
+import { ThemeSwitcher } from './ThemeSwitcher'
 
 export function Layout() {
   const [query, setQuery] = useState('')
@@ -48,6 +49,7 @@ export function Layout() {
           <NavLink to="/series">Series</NavLink>
         </nav>
         <div className="nav-actions">
+          <ThemeSwitcher />
           <form onSubmit={onSearch}>
             <input
               className="search-input"

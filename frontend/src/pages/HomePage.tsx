@@ -119,11 +119,10 @@ export function HomePage() {
         )}
         <div className="hero-scrim" aria-hidden />
         <div className="hero-content">
-          <h1 className="hero-brand">Locflix</h1>
           {featured && featuredCopy ? (
             <>
               <Link className="hero-media" to={itemLink(featured)}>
-                <h2 className="hero-title">{featuredCopy.title}</h2>
+                <h1 className="hero-title">{featuredCopy.title}</h1>
                 {featuredCopy.detail ? <p className="hero-detail">{featuredCopy.detail}</p> : null}
               </Link>
               {recent.length > 1 && (
