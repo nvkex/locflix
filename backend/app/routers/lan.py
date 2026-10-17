@@ -8,8 +8,10 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from app.config import get_settings
 from app.lan.guard import LAN_TOKEN_HEADER
 from app.lan.hub import lan_hub
+from app.lan.known import remember_seeder
 from app.lan.netinfo import default_share_name, is_loopback_host
 
 router = APIRouter(tags=["lan"])
@@ -38,6 +40,10 @@ class ConnectBody(BaseModel):
     port: int = 8787
     device_name: str = Field(default="Locflix Leecher", max_length=80)
     device_id: str = Field(default="", max_length=80)
+
+
+class DiscoverBody(BaseModel):
+    hints: list[str] = Field(default_factory=list)
 
 
 def _require_loopback(request: Request) -> None:
@@ -97,9 +103,22 @@ async def revoke_device(session_id: str, request: Request) -> dict[str, str]:
 
 
 @router.post("/lan/discover")
-async def discover_sources(request: Request) -> list[dict[str, Any]]:
+async def discover_sources(request: Request, body: DiscoverBody = DiscoverBody()) -> list[dict[str, Any]]:
     _require_loopback(request)
-    return lan_hub.discover_sources()
+    hints: list[tuple[str, int]] = []
+    for raw in body.hints:
+        text = (raw or "").strip().replace("http://", "").replace("https://", "")
+        if not text:
+            continue
+        host_part, _, port_part = text.partition(":")
+        host = host_part.split("/")[0].strip()
+        try:
+            port = int(port_part) if port_part else 8787
+        except ValueError:
+            port = 8787
+        if host:
+            hints.append((host, port))
+    return lan_hub.discover_sources(hints=hints)
 
 
 @router.get("/lan/sources")
@@ -176,6 +195,7 @@ async def connect_to_source(body: ConnectBody, request: Request) -> dict[str, An
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"Could not reach seeder: {exc}") from exc
 
+    remember_seeder(get_settings().data_dir, host, int(body.port))
     return {
         **data,
         "host": host,

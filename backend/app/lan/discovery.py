@@ -179,6 +179,7 @@ def scan_lan_sources(
     discovery_port: int = DEFAULT_DISCOVERY_PORT,
     api_port: int = 8787,
     timeout: float = DISCOVER_WINDOW_SEC,
+    hints: list[tuple[str, int]] | None = None,
 ) -> list[DiscoveredSource]:
     """Find seeders via UDP (best-effort) plus HTTP LAN scan (reliable on Wi‑Fi)."""
     found: dict[str, DiscoveredSource] = {}
@@ -187,7 +188,7 @@ def scan_lan_sources(
         found[source.seeder_id] = source
 
     # Wi‑Fi APs often block UDP broadcast even when TCP streaming works.
-    for source in scan_http_lan(api_port=api_port):
+    for source in scan_http_lan(api_port=api_port, hints=hints):
         found[source.seeder_id] = source
 
     return sorted(found.values(), key=lambda s: s.name.lower())
@@ -278,28 +279,60 @@ def subnet_host_ips(ip: str | None = None) -> list[str]:
     return [f"{prefix}.{i}" for i in range(1, 255)]
 
 
-def scan_http_lan(*, api_port: int = 8787) -> list[DiscoveredSource]:
+def scan_http_lan(
+    *,
+    api_port: int = 8787,
+    hints: list[tuple[str, int]] | None = None,
+) -> list[DiscoveredSource]:
     """
     Probe LAN hosts over HTTP for a live Locflix seeder.
 
     This is the reliable path on consumer Wi‑Fi where UDP broadcast is filtered.
+    Hints / ARP neighbors are probed first; full /24 only if nothing is found.
     """
-    candidates: list[str] = []
-    seen: set[str] = set()
-    for ip in neighbor_ips() + subnet_host_ips():
-        if ip not in seen:
-            seen.add(ip)
-            candidates.append(ip)
-
     found: dict[str, DiscoveredSource] = {}
-    if not candidates:
-        return []
 
-    def _check(host: str) -> DiscoveredSource | None:
-        return probe_http_seeder(host, api_port, timeout=HTTP_PROBE_TIMEOUT_SEC)
+    priority: list[tuple[str, int]] = []
+    seen: set[tuple[str, int]] = set()
+
+    def _add(host: str, port: int) -> None:
+        key = (host.strip(), int(port))
+        if not key[0] or key in seen:
+            return
+        seen.add(key)
+        priority.append(key)
+
+    for host, port in hints or []:
+        _add(host, port)
+    for ip in neighbor_ips():
+        _add(ip, api_port)
+    _add(primary_lan_ip(), api_port)
+
+    found.update(_probe_hosts(priority))
+    if found:
+        return list(found.values())
+
+    # Slow path: full subnet sweep when Wi‑Fi hid everyone from ARP.
+    subnet: list[tuple[str, int]] = []
+    for ip in subnet_host_ips():
+        key = (ip, api_port)
+        if key not in seen:
+            subnet.append(key)
+    found.update(_probe_hosts(subnet))
+    return list(found.values())
+
+
+def _probe_hosts(hosts: list[tuple[str, int]]) -> dict[str, DiscoveredSource]:
+    found: dict[str, DiscoveredSource] = {}
+    if not hosts:
+        return found
+
+    def _check(item: tuple[str, int]) -> DiscoveredSource | None:
+        host, port = item
+        return probe_http_seeder(host, port, timeout=HTTP_PROBE_TIMEOUT_SEC)
 
     with ThreadPoolExecutor(max_workers=HTTP_SCAN_WORKERS) as pool:
-        futures = [pool.submit(_check, host) for host in candidates]
+        futures = [pool.submit(_check, item) for item in hosts]
         for fut in as_completed(futures):
             try:
                 source = fut.result()
@@ -307,8 +340,7 @@ def scan_http_lan(*, api_port: int = 8787) -> list[DiscoveredSource]:
                 continue
             if source is not None:
                 found[source.seeder_id] = source
-
-    return list(found.values())
+    return found
 
 
 def probe_http_seeder(host: str, port: int, timeout: float = 1.2) -> DiscoveredSource | None:

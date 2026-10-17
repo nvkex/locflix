@@ -16,6 +16,7 @@ from app.lan.discovery import (
     probe_http_seeder,
     scan_lan_sources,
 )
+from app.lan.known import load_known_seeders, remember_seeder
 from app.lan.netinfo import default_share_name, local_hostname, primary_lan_ip, resolve_hostname
 
 
@@ -254,13 +255,16 @@ class LanHub:
                 current.now_playing_id = media_id
                 current.now_playing_title = media_title
 
-    def discover_sources(self) -> list[dict[str, Any]]:
+    def discover_sources(self, hints: list[tuple[str, int]] | None = None) -> list[dict[str, Any]]:
         settings = get_settings()
+        merged_hints = list(hints or [])
+        merged_hints.extend(load_known_seeders(settings.data_dir))
         found: dict[str, DiscoveredSource] = {
             s.seeder_id: s
             for s in scan_lan_sources(
                 discovery_port=self.discovery_port,
                 api_port=settings.port,
+                hints=merged_hints,
             )
         }
 
@@ -299,6 +303,9 @@ class LanHub:
             )
 
         ordered = sorted(found.values(), key=lambda s: (not s.is_self, s.name.lower()))
+        for source in ordered:
+            if not source.is_self:
+                remember_seeder(settings.data_dir, source.host, source.port)
         with self._lock:
             self._last_discovered = ordered
         return [s.to_dict() for s in ordered]
