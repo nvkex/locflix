@@ -214,7 +214,7 @@ export function LanPage() {
           </button>
         </div>
         <p className="muted">
-          Find Locflix seeders on your network and stream their library in this browser.
+          Scans the Wi‑Fi subnet over HTTP (UDP broadcast is often blocked). Takes a few seconds.
         </p>
         {remote ? (
           <div className="lan-remote-active">

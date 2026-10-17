@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import socket
+import subprocess
 import threading
 import time
 import urllib.error
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -17,7 +20,9 @@ logger = logging.getLogger(__name__)
 MAGIC = "locflix-lan-v1"
 DEFAULT_DISCOVERY_PORT = 8788
 ANNOUNCE_INTERVAL_SEC = 1.5
-DISCOVER_WINDOW_SEC = 3.5
+DISCOVER_WINDOW_SEC = 2.0
+HTTP_PROBE_TIMEOUT_SEC = 0.45
+HTTP_SCAN_WORKERS = 64
 
 
 @dataclass(frozen=True)
@@ -169,8 +174,26 @@ class DiscoveryBeacon:
         self._broadcast_announce(sock)
 
 
-def scan_lan_sources(*, discovery_port: int = DEFAULT_DISCOVERY_PORT, timeout: float = DISCOVER_WINDOW_SEC) -> list[DiscoveredSource]:
-    """Broadcast discover probes and collect unique seeder announcements/replies."""
+def scan_lan_sources(
+    *,
+    discovery_port: int = DEFAULT_DISCOVERY_PORT,
+    api_port: int = 8787,
+    timeout: float = DISCOVER_WINDOW_SEC,
+) -> list[DiscoveredSource]:
+    """Find seeders via UDP (best-effort) plus HTTP LAN scan (reliable on Wi‑Fi)."""
+    found: dict[str, DiscoveredSource] = {}
+
+    for source in _scan_udp(discovery_port=discovery_port, timeout=timeout):
+        found[source.seeder_id] = source
+
+    # Wi‑Fi APs often block UDP broadcast even when TCP streaming works.
+    for source in scan_http_lan(api_port=api_port):
+        found[source.seeder_id] = source
+
+    return sorted(found.values(), key=lambda s: s.name.lower())
+
+
+def _scan_udp(*, discovery_port: int, timeout: float) -> list[DiscoveredSource]:
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:
@@ -186,14 +209,13 @@ def scan_lan_sources(*, discovery_port: int = DEFAULT_DISCOVERY_PORT, timeout: f
 
     probe = encode_packet({"type": "discover"})
     targets = [(host, discovery_port) for host in broadcast_targets()]
-    # Repeat probes — Windows Wi‑Fi often drops the first broadcast.
     for _ in range(3):
         for target in targets:
             try:
                 sock.sendto(probe, target)
             except OSError:
                 continue
-        time.sleep(0.15)
+        time.sleep(0.12)
 
     found: dict[str, DiscoveredSource] = {}
     deadline = time.monotonic() + timeout
@@ -205,9 +227,7 @@ def scan_lan_sources(*, discovery_port: int = DEFAULT_DISCOVERY_PORT, timeout: f
         except OSError:
             break
         payload = decode_packet(data)
-        if payload is None:
-            continue
-        if payload.get("type") not in {"announce", "reply"}:
+        if payload is None or payload.get("type") not in {"announce", "reply"}:
             continue
         source = _source_from_payload(payload)
         if source is not None:
@@ -217,14 +237,78 @@ def scan_lan_sources(*, discovery_port: int = DEFAULT_DISCOVERY_PORT, timeout: f
         sock.close()
     except OSError:
         pass
+    return list(found.values())
 
-    # HTTP confirmation / fill-in when UDP is flaky.
-    for source in list(found.values()):
-        verified = probe_http_seeder(source.host, source.port)
-        if verified is not None:
-            found[verified.seeder_id] = verified
 
-    return sorted(found.values(), key=lambda s: s.name.lower())
+def neighbor_ips() -> list[str]:
+    """IPs seen in the ARP table (recent LAN neighbors)."""
+    try:
+        completed = subprocess.run(
+            ["arp", "-a"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    ips = re.findall(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", completed.stdout or "")
+    local = primary_lan_ip()
+    out: list[str] = []
+    seen: set[str] = set()
+    for ip in ips:
+        if ip.startswith("255.") or ip.endswith(".255") or ip.startswith("224."):
+            continue
+        if ip in seen:
+            continue
+        seen.add(ip)
+        out.append(ip)
+    if local and local not in seen:
+        out.insert(0, local)
+    return out
+
+
+def subnet_host_ips(ip: str | None = None) -> list[str]:
+    """All hosts in the /24 of the given (or primary) LAN IP."""
+    addr = ip or primary_lan_ip()
+    parts = addr.split(".")
+    if len(parts) != 4 or not all(p.isdigit() for p in parts):
+        return []
+    prefix = f"{parts[0]}.{parts[1]}.{parts[2]}"
+    return [f"{prefix}.{i}" for i in range(1, 255)]
+
+
+def scan_http_lan(*, api_port: int = 8787) -> list[DiscoveredSource]:
+    """
+    Probe LAN hosts over HTTP for a live Locflix seeder.
+
+    This is the reliable path on consumer Wi‑Fi where UDP broadcast is filtered.
+    """
+    candidates: list[str] = []
+    seen: set[str] = set()
+    for ip in neighbor_ips() + subnet_host_ips():
+        if ip not in seen:
+            seen.add(ip)
+            candidates.append(ip)
+
+    found: dict[str, DiscoveredSource] = {}
+    if not candidates:
+        return []
+
+    def _check(host: str) -> DiscoveredSource | None:
+        return probe_http_seeder(host, api_port, timeout=HTTP_PROBE_TIMEOUT_SEC)
+
+    with ThreadPoolExecutor(max_workers=HTTP_SCAN_WORKERS) as pool:
+        futures = [pool.submit(_check, host) for host in candidates]
+        for fut in as_completed(futures):
+            try:
+                source = fut.result()
+            except Exception:  # noqa: BLE001
+                continue
+            if source is not None:
+                found[source.seeder_id] = source
+
+    return list(found.values())
 
 
 def probe_http_seeder(host: str, port: int, timeout: float = 1.2) -> DiscoveredSource | None:

@@ -239,8 +239,13 @@ class LanHub:
                 current.now_playing_title = media_title
 
     def discover_sources(self) -> list[dict[str, Any]]:
+        settings = get_settings()
         found: dict[str, DiscoveredSource] = {
-            s.seeder_id: s for s in scan_lan_sources(discovery_port=self.discovery_port)
+            s.seeder_id: s
+            for s in scan_lan_sources(
+                discovery_port=self.discovery_port,
+                api_port=settings.port,
+            )
         }
 
         # Same machine: scanning from the seeder used to hide ourselves and look "empty".
@@ -248,7 +253,6 @@ class LanHub:
             sharing = self.share_enabled and self.owner_consented
             local_seeder_id = self.seeder_id
             share_name = self.share_name
-        settings = get_settings()
         lan_ip = primary_lan_ip()
         if sharing:
             found[local_seeder_id] = DiscoveredSource(
