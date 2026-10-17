@@ -20,6 +20,7 @@ Default libraries (configurable):
 
 - Netflix-like home (recently added hero), rows, title detail, and fullscreen player
 - Multi-theme UI: **Glass** (default) and **GenUI** (Veriguard-style cyber-security)
+- **LAN streaming** — share this library to other devices on the same Wi‑Fi (seeder/leecher)
 - Catalog from local **Movies** and **Series** directories
 - Movies as **folders** or **loose** `.mp4` / `.mkv` / etc. in the Movies root
 - Season / episode navigation (`SXXEYY` filenames)

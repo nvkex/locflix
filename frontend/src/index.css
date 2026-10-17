@@ -1370,3 +1370,185 @@ img {
     display: none;
   }
 }
+
+/* ---------- LAN streaming ---------- */
+
+.lan-header-badge {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  max-width: 12rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--radius-control);
+  border: 1px solid rgba(var(--accent-rgb), 0.4);
+  background: var(--accent-soft);
+  line-height: 1.2;
+}
+
+.lan-header-badge.seeder {
+  border-color: rgba(120, 220, 160, 0.45);
+  background: rgba(120, 220, 160, 0.12);
+}
+
+.lan-header-kicker {
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.lan-header-badge strong {
+  font-size: 0.82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lan-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.lan-panel {
+  padding: 1.25rem 1.4rem;
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.lan-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.lan-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 220px;
+}
+
+.lan-field span {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.lan-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.lan-ok {
+  color: #7ddea8;
+}
+
+.lan-device-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.lan-device-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid transparent;
+}
+
+.lan-inline-actions {
+  display: flex;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.lan-remote-active {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
+  background: var(--accent-soft);
+}
+
+.lan-pill {
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.28rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+}
+
+.lan-pill.pending {
+  color: #ffd28a;
+  border-color: rgba(255, 210, 138, 0.45);
+}
+
+.lan-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgba(4, 8, 14, 0.62);
+}
+
+.lan-modal {
+  width: min(480px, 100%);
+  padding: 1.4rem 1.5rem 1.25rem;
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.lan-modal-kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.lan-modal h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+}
+
+.lan-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.35rem;
+}
+
+@media (max-width: 800px) {
+  .lan-header-badge {
+    display: none;
+  }
+
+  .lan-device-list li {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

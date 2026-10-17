@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { api } from '../api'
+import { api, mediaAssetUrl } from '../api'
 import { MediaMetadata } from '../components/MediaMetadata'
 import { TmdbDetails } from '../components/TmdbDetails'
 import type { Movie } from '../types'
@@ -46,9 +46,12 @@ export function MovieDetailPage() {
     <main className="page">
       <div className="detail-layout">
         <aside className="detail-aside">
-          <div className={`poster${movie.poster ? ' has-image' : ''}`} style={{ minHeight: 360 }}>
-            {movie.poster ? (
-              <img src={movie.poster} alt={movie.title} />
+          <div
+            className={`poster${mediaAssetUrl(movie.poster) ? ' has-image' : ''}`}
+            style={{ minHeight: 360 }}
+          >
+            {mediaAssetUrl(movie.poster) ? (
+              <img src={mediaAssetUrl(movie.poster)!} alt={movie.title} />
             ) : (
               <span>{movie.title}</span>
             )}

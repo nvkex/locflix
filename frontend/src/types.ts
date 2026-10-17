@@ -137,3 +137,50 @@ export interface SubtitlesResponse {
   embedded_possible: boolean
   preferred_language: string | null
 }
+
+export interface LanShareStatus {
+  seeder_id: string
+  share_enabled: boolean
+  share_name: string
+  owner_consented: boolean
+  discovery_port: number
+  lan_ip: string
+  api_port: number
+  base_url: string
+  pending_count: number
+  active_count: number
+}
+
+export interface LanDevice {
+  session_id: string
+  device_name: string
+  device_id: string
+  client_ip: string
+  status: string
+  created_at: string
+  updated_at: string
+  last_seen_at: string | null
+  now_playing_id: string | null
+  now_playing_title: string | null
+}
+
+export interface LanSource {
+  seeder_id: string
+  name: string
+  host: string
+  port: number
+  base_url: string
+}
+
+export interface LanConnectResult {
+  session_id: string
+  status: string
+  device_name?: string
+  share_name?: string
+  seeder_id?: string
+  token?: string | null
+  host?: string
+  port?: number
+  base_url?: string
+  token_header?: string
+}

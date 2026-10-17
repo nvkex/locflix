@@ -14,11 +14,14 @@ class Settings(BaseSettings):
 
     movies_dir: Path = Path(r"D:\TV\Movies")
     series_dir: Path = Path(r"D:\TV\Series")
-    host: str = "127.0.0.1"
+    # Bind 0.0.0.0 so other LAN devices can reach this seeder.
+    host: str = "0.0.0.0"
     port: int = 8787
     data_dir: Path = Path("./data")
     scan_on_start: bool = True
-    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    # Comma list, or "*" to allow any browser origin (needed for LAN leechers).
+    cors_origins: str = "*"
+    lan_discovery_port: int = 8788
     # Free key from https://www.themoviedb.org/settings/api
     tmdb_api_key: str = ""
     fetch_posters_on_scan: bool = True
@@ -27,7 +30,8 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> list[str]:
-        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        raw = [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        return raw or ["*"]
 
     @property
     def db_path(self) -> Path:

@@ -31,15 +31,16 @@ else
   exit 1
 fi
 
-uvicorn app.main:app --host 127.0.0.1 --port 8787 &
+uvicorn app.main:app --host 0.0.0.0 --port 8787 &
 BACKEND_PID=$!
 
 cd "${ROOT}/frontend"
 npm run dev &
 FRONTEND_PID=$!
 
-echo "Locflix backend  → http://127.0.0.1:8787"
+echo "Locflix backend  → http://0.0.0.0:8787 (LAN-reachable)"
 echo "Locflix frontend → http://localhost:5173"
+echo "LAN page         → /lan"
 echo "Press Ctrl+C to stop both."
 
 wait

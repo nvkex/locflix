@@ -65,11 +65,32 @@ Locflix supports multiple UI themes via a switcher in the nav (stored in `localS
 | Theme | Look |
 |-------|------|
 | **Glass UI** (default) | Soft glassmorphism, rounded controls, cool blue accents |
-| **GenUI** | Veriguard-style human-auth / cyber-security HUD — neon green, monospace, scanlines, angular panels |
+| **GenUI** | Veriguard-style human-auth / cyber-security HUD — neon green, monospace, angular panels |
 
 ## Streaming
 
 `GET /api/stream/{id}` serves the file with HTTP **Range** (seekable `206`). Paths must resolve under the configured Movies/Series roots.
+
+---
+
+## LAN multi-device streaming
+
+Two roles on the same Wi‑Fi/LAN:
+
+| Role | Machine | Job |
+|------|---------|-----|
+| **Seeder** | Has the media files | Shares library after one session consent |
+| **Leecher** | Another laptop/browser | Scans for seeders, connects, streams |
+
+Flow:
+
+1. Seeder opens **LAN** → Start sharing → approve the consent modal once for this session  
+2. Seeder appears via UDP discovery (`LOCFLIX_LAN_DISCOVERY_PORT`, default `8788`)  
+3. Leecher opens **LAN** → Scan LAN sources → Connect (waits if seeder has not consented yet)  
+4. Leecher header shows **Streaming from {seeder name}**; catalog/player hit the seeder API  
+5. Seeder **LAN** page lists connected devices and what they are playing  
+
+Backend must bind `0.0.0.0` (`LOCFLIX_HOST`) and allow CORS for LAN browsers (`LOCFLIX_CORS_ORIGINS=*`). Remote stream/poster requests use `X-Locflix-Lan-Token` or `?lan_token=`.
 
 ---
 
@@ -106,6 +127,9 @@ File badges: quality (`1080p` / `720p`) and audio languages. A borderless table 
 | Variable | Role |
 |----------|------|
 | `LOCFLIX_MOVIES_DIR` / `LOCFLIX_SERIES_DIR` | Library roots |
+| `LOCFLIX_HOST` / `LOCFLIX_PORT` | API bind (use `0.0.0.0` for LAN seeding) |
+| `LOCFLIX_CORS_ORIGINS` | Browser origins (`*` for LAN leechers) |
+| `LOCFLIX_LAN_DISCOVERY_PORT` | UDP discovery port (default `8788`) |
 | `LOCFLIX_TMDB_API_KEY` | Optional poster enrichment / detail metadata |
 | `LOCFLIX_OPENSUBTITLES_API_KEY` | Optional English subtitle downloads |
 | `LOCFLIX_FETCH_POSTERS_ON_SCAN` | Background TMDB on scan/start |
