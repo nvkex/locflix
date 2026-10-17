@@ -1,0 +1,279 @@
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
+import { api, setRemoteSource, type RemoteSource } from './api'
+import type { LanDevice, LanShareStatus, LanSource } from './types'
+
+const DEVICE_ID_KEY = 'locflix.lan.device_id'
+const REMOTE_KEY = 'locflix.lan.remote'
+const SEEDER_HINTS_KEY = 'locflix.lan.seeder_hints'
+
+interface LanContextValue {
+  share: LanShareStatus | null
+  devices: LanDevice[]
+  sources: LanSource[]
+  remote: RemoteSource | null
+  refreshing: boolean
+  scanning: boolean
+  connecting: boolean
+  refreshShare: () => Promise<void>
+  setShareEnabled: (enabled: boolean, name?: string) => Promise<void>
+  grantOwnerConsent: (approved: boolean) => Promise<void>
+  decideDeviceConsent: (sessionId: string, approve: boolean) => Promise<void>
+  revokeDevice: (sessionId: string) => Promise<void>
+  scanSources: (extraHints?: string[]) => Promise<LanSource[]>
+  connectSource: (source: LanSource) => Promise<void>
+  connectHost: (host: string, port?: number) => Promise<void>
+  disconnectRemote: () => void
+  deviceName: string
+  rememberSeederHint: (host: string, port?: number) => void
+}
+
+const LanContext = createContext<LanContextValue | null>(null)
+
+function readDeviceId(): string {
+  try {
+    const existing = localStorage.getItem(DEVICE_ID_KEY)
+    if (existing) return existing
+    const id = crypto.randomUUID()
+    localStorage.setItem(DEVICE_ID_KEY, id)
+    return id
+  } catch {
+    return `web-${Math.random().toString(36).slice(2)}`
+  }
+}
+
+function readStoredRemote(): RemoteSource | null {
+  try {
+    const raw = localStorage.getItem(REMOTE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as RemoteSource
+    if (parsed?.baseUrl && parsed?.token && parsed?.name) return parsed
+  } catch {
+    /* ignore */
+  }
+  return null
+}
+
+function readSeederHints(): string[] {
+  try {
+    const raw = localStorage.getItem(SEEDER_HINTS_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as string[]
+    return Array.isArray(parsed) ? parsed.filter(Boolean).slice(0, 20) : []
+  } catch {
+    return []
+  }
+}
+
+function writeSeederHint(host: string, port = 8787) {
+  const clean = host.trim().replace(/^https?:\/\//, '').split('/')[0]
+  if (!clean) return
+  const hint = clean.includes(':') ? clean : `${clean}:${port}`
+  const next = [hint, ...readSeederHints().filter((item) => item !== hint)].slice(0, 20)
+  try {
+    localStorage.setItem(SEEDER_HINTS_KEY, JSON.stringify(next))
+  } catch {
+    /* ignore */
+  }
+}
+
+function browserLabel(): string {
+  if (typeof navigator !== 'undefined' && navigator.userAgent) {
+    const ua = navigator.userAgent
+    if (/Edg\//.test(ua)) return 'Edge'
+    if (/Chrome\//.test(ua)) return 'Chrome'
+    if (/Firefox\//.test(ua)) return 'Firefox'
+    if (/Safari\//.test(ua)) return 'Safari'
+  }
+  return 'Browser'
+}
+
+function buildDeviceName(hostname?: string | null): string {
+  const host = (hostname || '').trim()
+  const browser = browserLabel()
+  if (host) return `${host} · ${browser}`
+  return `${browser} on Locflix`
+}
+
+export function LanProvider({ children }: { children: ReactNode }) {
+  const [share, setShare] = useState<LanShareStatus | null>(null)
+  const [devices, setDevices] = useState<LanDevice[]>([])
+  const [sources, setSources] = useState<LanSource[]>([])
+  const [remote, setRemote] = useState<RemoteSource | null>(() => readStoredRemote())
+  const [refreshing, setRefreshing] = useState(false)
+  const [scanning, setScanning] = useState(false)
+  const [connecting, setConnecting] = useState(false)
+  const [deviceName, setDeviceName] = useState(() => buildDeviceName())
+  const deviceId = useMemo(() => readDeviceId(), [])
+
+  const persistRemote = useEffectEvent((next: RemoteSource | null) => {
+    setRemoteSource(next)
+    setRemote(next)
+    try {
+      if (next) localStorage.setItem(REMOTE_KEY, JSON.stringify(next))
+      else localStorage.removeItem(REMOTE_KEY)
+    } catch {
+      /* ignore */
+    }
+  })
+
+  useEffect(() => {
+    setRemoteSource(remote)
+  }, [remote])
+
+  const refreshShare = useEffectEvent(async () => {
+    setRefreshing(true)
+    try {
+      const status = await api.lanStatus()
+      setShare(status)
+      setDeviceName(buildDeviceName(status.hostname || status.share_name))
+      if (status.share_enabled) {
+        const [devs] = await Promise.all([api.lanDevices()])
+        setDevices(devs)
+      } else {
+        setDevices([])
+      }
+    } catch {
+      /* local API may be down */
+    } finally {
+      setRefreshing(false)
+    }
+  })
+
+  useEffect(() => {
+    void refreshShare()
+  }, [])
+
+  async function setShareEnabled(enabled: boolean, name?: string) {
+    const status = await api.lanShare(enabled, name)
+    setShare(status)
+    if (enabled) await refreshShare()
+    else setDevices([])
+  }
+
+  async function grantOwnerConsent(approved: boolean) {
+    const status = await api.lanOwnerConsent(approved)
+    setShare(status)
+    await refreshShare()
+  }
+
+  async function decideDeviceConsent(sessionId: string, approve: boolean) {
+    await api.lanDecideConsent(sessionId, approve)
+    await refreshShare()
+  }
+
+  async function revokeDevice(sessionId: string) {
+    await api.lanRevokeDevice(sessionId)
+    await refreshShare()
+  }
+
+  async function scanSources(extraHints: string[] = []) {
+    setScanning(true)
+    try {
+      const hints = [...extraHints, ...readSeederHints()]
+      if (remote?.baseUrl) hints.unshift(remote.baseUrl)
+      const found = await api.lanDiscover(hints)
+      setSources(found)
+      for (const source of found) {
+        if (!source.is_self) writeSeederHint(source.host, source.port)
+      }
+      return found
+    } finally {
+      setScanning(false)
+    }
+  }
+
+  function rememberSeederHint(host: string, port = 8787) {
+    writeSeederHint(host, port)
+  }
+
+  async function connectSource(source: LanSource) {
+    setConnecting(true)
+    try {
+      let result = await api.lanConnect({
+        host: source.host,
+        port: source.port,
+        device_name: deviceName,
+        device_id: deviceId,
+      })
+
+      const started = Date.now()
+      while (result.status === 'pending' && Date.now() - started < 120_000) {
+        await new Promise((r) => window.setTimeout(r, 1500))
+        result = await api.lanConnectPoll(result.session_id, source.host, source.port)
+      }
+
+      if (result.status !== 'approved' || !result.token) {
+        throw new Error(
+          result.status === 'pending'
+            ? 'Waiting for seeder consent timed out'
+            : `Seeder ${result.status || 'rejected'} this device`,
+        )
+      }
+
+      const baseUrl = result.base_url || source.base_url
+      writeSeederHint(source.host, source.port)
+      persistRemote({
+        baseUrl,
+        token: result.token,
+        name: result.share_name || source.name,
+        seederId: result.seeder_id || source.seeder_id,
+        tokenHeader: result.token_header || 'X-Locflix-Lan-Token',
+      })
+    } finally {
+      setConnecting(false)
+    }
+  }
+
+  async function connectHost(host: string, port = 8787) {
+    const clean = host.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '')
+    if (!clean) throw new Error('Enter a seeder host or IP')
+    await connectSource({
+      seeder_id: `manual-${clean}:${port}`,
+      name: clean,
+      host: clean,
+      port,
+      base_url: `http://${clean}:${port}`,
+    })
+  }
+
+  function disconnectRemote() {
+    persistRemote(null)
+  }
+
+  const value: LanContextValue = {
+    share,
+    devices,
+    sources,
+    remote,
+    refreshing,
+    scanning,
+    connecting,
+    refreshShare,
+    setShareEnabled,
+    grantOwnerConsent,
+    decideDeviceConsent,
+    revokeDevice,
+    scanSources,
+    connectSource,
+    connectHost,
+    disconnectRemote,
+    deviceName,
+    rememberSeederHint,
+  }
+
+  return <LanContext.Provider value={value}>{children}</LanContext.Provider>
+}
+
+export function useLan(): LanContextValue {
+  const ctx = useContext(LanContext)
+  if (!ctx) throw new Error('useLan must be used within LanProvider')
+  return ctx
+}

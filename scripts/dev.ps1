@@ -10,7 +10,7 @@ if (-not (Test-Path $venvActivate)) {
 Start-Process powershell -ArgumentList @(
   "-NoExit",
   "-Command",
-  "cd `"$root\backend`"; . `"$venvActivate`"; uvicorn app.main:app --host 127.0.0.1 --port 8787"
+  "cd `"$root\backend`"; . `"$venvActivate`"; uvicorn app.main:app --host 0.0.0.0 --port 8787"
 )
 
 Start-Process powershell -ArgumentList @(
@@ -19,4 +19,5 @@ Start-Process powershell -ArgumentList @(
   "cd `"$root\frontend`"; npm run dev"
 )
 
-Write-Host "Started Locflix backend (http://127.0.0.1:8787) and frontend (http://localhost:5173)."
+Write-Host "Started Locflix backend (http://0.0.0.0:8787) and frontend (http://localhost:5173)."
+Write-Host "LAN sharing: open /lan in the UI. Backend listens on all interfaces for leechers."

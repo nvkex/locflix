@@ -1,4 +1,4 @@
-# Locflix — Design Document
+# Locflix - Design Document
 
 > A Netflix-like streaming UI for movies and TV shows stored on your local filesystem.
 
@@ -109,8 +109,8 @@ LOCFLIX_FETCH_POSTERS_ON_SCAN=true
 
 Two shapes are supported:
 
-1. **Folder title** — each immediate subdirectory is one movie; folder name = display title; all supported videos inside are included (filenames need not match).  
-2. **Loose file** — a video file directly under the Movies root is one movie; filename stem = display title.
+1. **Folder title** - each immediate subdirectory is one movie; folder name = display title; all supported videos inside are included (filenames need not match).  
+2. **Loose file** - a video file directly under the Movies root is one movie; filename stem = display title.
 
 ```
 Movies/
@@ -221,10 +221,10 @@ Base: `http://localhost:8787/api`
 
 ## 8. Frontend UX
 
-1. **Home** — Locflix brand + rotating recently-added hero; Continue Watching; Movies; Series  
-2. **Movies / Series** — responsive grids  
-3. **Detail** — poster + play / file or episode lists  
-4. **Player** — native `<video>`, CC menu, caption size, keyboard shortcuts  
+1. **Home** - Locflix brand + rotating recently-added hero; Continue Watching; Movies; Series  
+2. **Movies / Series** - responsive grids  
+3. **Detail** - poster + play / file or episode lists  
+4. **Player** - native `<video>`, CC menu, caption size, keyboard shortcuts  
 
 Cards: show poster image alone when available; fallback title overlay when not. Caption under card shows title (+ episode count for series).
 
@@ -234,10 +234,10 @@ Nav: full-width glass header (no pill radius). Carousel rows: eased arrow scroll
 
 ## 9. Security & Safety
 
-1. Path allowlist — only under configured Movies/Series roots  
+1. Path allowlist - only under configured Movies/Series roots  
 2. Resolve streams/subs/posters by media id only  
 3. Default bind `127.0.0.1`  
-4. No auth — LAN exposure shares the library  
+4. No auth - LAN exposure shares the library  
 
 ---
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { api } from '../api'
+import { api, mediaAssetUrl } from '../api'
 import { MediaMetadata } from '../components/MediaMetadata'
 import { TmdbDetails } from '../components/TmdbDetails'
 import type { Show } from '../types'
@@ -50,8 +50,15 @@ export function ShowDetailPage() {
     <main className="page">
       <div className="detail-layout">
         <aside className="detail-aside">
-          <div className={`poster${show.poster ? ' has-image' : ''}`} style={{ minHeight: 360 }}>
-            {show.poster ? <img src={show.poster} alt={show.title} /> : <span>{show.title}</span>}
+          <div
+            className={`poster${mediaAssetUrl(show.poster) ? ' has-image' : ''}`}
+            style={{ minHeight: 360 }}
+          >
+            {mediaAssetUrl(show.poster) ? (
+              <img src={mediaAssetUrl(show.poster)!} alt={show.title} />
+            ) : (
+              <span>{show.title}</span>
+            )}
           </div>
           <TmdbDetails kind="series" id={show.id} />
           <MediaMetadata
