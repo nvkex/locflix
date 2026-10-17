@@ -9,7 +9,13 @@ from datetime import datetime, timezone
 from typing import Any
 
 from app.config import get_settings
-from app.lan.discovery import DEFAULT_DISCOVERY_PORT, DiscoveryBeacon, DiscoveredSource, scan_lan_sources
+from app.lan.discovery import (
+    DEFAULT_DISCOVERY_PORT,
+    DiscoveryBeacon,
+    DiscoveredSource,
+    probe_http_seeder,
+    scan_lan_sources,
+)
 from app.lan.netinfo import default_share_name, primary_lan_ip
 
 
@@ -67,6 +73,7 @@ class LanHub:
         settings = get_settings()
         lan_ip = primary_lan_ip()
         with self._lock:
+            beacon = self._beacon
             return {
                 "seeder_id": self.seeder_id,
                 "share_enabled": self.share_enabled,
@@ -76,6 +83,8 @@ class LanHub:
                 "lan_ip": lan_ip,
                 "api_port": settings.port,
                 "base_url": f"http://{lan_ip}:{settings.port}",
+                "beacon_running": bool(beacon and beacon.running),
+                "beacon_error": beacon.last_error if beacon else None,
                 "pending_count": sum(1 for s in self._sessions.values() if s.status == "pending"),
                 "active_count": sum(1 for s in self._sessions.values() if s.status == "approved"),
             }
@@ -230,12 +239,49 @@ class LanHub:
                 current.now_playing_title = media_title
 
     def discover_sources(self) -> list[dict[str, Any]]:
-        sources = scan_lan_sources(discovery_port=self.discovery_port)
-        # Hide ourselves from the list.
-        filtered = [s for s in sources if s.seeder_id != self.seeder_id]
+        found: dict[str, DiscoveredSource] = {
+            s.seeder_id: s for s in scan_lan_sources(discovery_port=self.discovery_port)
+        }
+
+        # Same machine: scanning from the seeder used to hide ourselves and look "empty".
         with self._lock:
-            self._last_discovered = filtered
-        return [s.to_dict() for s in filtered]
+            sharing = self.share_enabled and self.owner_consented
+            local_seeder_id = self.seeder_id
+            share_name = self.share_name
+        settings = get_settings()
+        lan_ip = primary_lan_ip()
+        if sharing:
+            found[local_seeder_id] = DiscoveredSource(
+                seeder_id=local_seeder_id,
+                name=share_name,
+                host=lan_ip,
+                port=settings.port,
+                base_url=f"http://{lan_ip}:{settings.port}",
+                is_self=True,
+            )
+
+        # Extra HTTP checks for UDP-discovered hosts + this LAN IP.
+        candidates = {(s.host, s.port) for s in found.values()}
+        candidates.add((lan_ip, settings.port))
+        for host, port in candidates:
+            verified = probe_http_seeder(host, port)
+            if verified is None:
+                continue
+            existing = found.get(verified.seeder_id)
+            found[verified.seeder_id] = DiscoveredSource(
+                seeder_id=verified.seeder_id,
+                name=verified.name,
+                host=verified.host,
+                port=verified.port,
+                base_url=verified.base_url,
+                is_self=bool(existing and existing.is_self)
+                or verified.seeder_id == local_seeder_id,
+            )
+
+        ordered = sorted(found.values(), key=lambda s: (not s.is_self, s.name.lower()))
+        with self._lock:
+            self._last_discovered = ordered
+        return [s.to_dict() for s in ordered]
 
     def last_discovered(self) -> list[dict[str, Any]]:
         with self._lock:

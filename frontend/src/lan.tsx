@@ -28,6 +28,7 @@ interface LanContextValue {
   revokeDevice: (sessionId: string) => Promise<void>
   scanSources: () => Promise<void>
   connectSource: (source: LanSource) => Promise<void>
+  connectHost: (host: string, port?: number) => Promise<void>
   disconnectRemote: () => void
   deviceName: string
 }
@@ -188,6 +189,18 @@ export function LanProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function connectHost(host: string, port = 8787) {
+    const clean = host.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '')
+    if (!clean) throw new Error('Enter a seeder host or IP')
+    await connectSource({
+      seeder_id: `manual-${clean}:${port}`,
+      name: clean,
+      host: clean,
+      port,
+      base_url: `http://${clean}:${port}`,
+    })
+  }
+
   function disconnectRemote() {
     persistRemote(null)
   }
@@ -207,6 +220,7 @@ export function LanProvider({ children }: { children: ReactNode }) {
     revokeDevice,
     scanSources,
     connectSource,
+    connectHost,
     disconnectRemote,
     deviceName,
   }

@@ -25,9 +25,12 @@ export function LanPage() {
     revokeDevice,
     scanSources,
     connectSource,
+    connectHost,
     disconnectRemote,
   } = useLan()
   const [shareName, setShareName] = useState('')
+  const [manualHost, setManualHost] = useState('')
+  const [manualPort, setManualPort] = useState('8787')
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
 
@@ -48,6 +51,18 @@ export function LanPage() {
     setError(null)
     try {
       await connectSource(source)
+      navigate('/')
+      navigate(0)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to connect')
+    }
+  }
+
+  async function onManualConnect() {
+    setError(null)
+    try {
+      const port = Number(manualPort) || 8787
+      await connectHost(manualHost, port)
       navigate('/')
       navigate(0)
     } catch (err) {
@@ -99,6 +114,14 @@ export function LanPage() {
             </span>
             <span>
               Address: <code>{share.base_url}</code>
+            </span>
+            <span>
+              Discovery:{' '}
+              {share.beacon_running ? (
+                <strong className="lan-ok">advertising UDP {share.discovery_port}</strong>
+              ) : (
+                <strong>{share.beacon_error || 'not advertising yet'}</strong>
+              )}
             </span>
             {!share.owner_consented ? (
               <button type="button" className="btn" onClick={() => void grantOwnerConsent(true)}>
@@ -211,13 +234,19 @@ export function LanPage() {
             </button>
           </div>
         ) : sources.length === 0 ? (
-          <p className="muted">No sources yet. Scan while another device is sharing.</p>
+          <p className="muted">
+            No sources found yet. On the seeder, confirm sharing is live and discovery says
+            advertising. You can also connect by IP below.
+          </p>
         ) : (
           <ul className="lan-device-list">
             {sources.map((source) => (
               <li key={source.seeder_id}>
                 <div>
-                  <strong>{source.name}</strong>
+                  <strong>
+                    {source.name}
+                    {source.is_self ? ' (this PC)' : ''}
+                  </strong>
                   <div className="muted">{source.base_url}</div>
                 </div>
                 <button
@@ -232,6 +261,36 @@ export function LanPage() {
             ))}
           </ul>
         )}
+        {!remote ? (
+          <div className="lan-row">
+            <label className="lan-field">
+              <span>Manual seeder IP / host</span>
+              <input
+                className="search-input"
+                value={manualHost}
+                onChange={(e) => setManualHost(e.target.value)}
+                placeholder={share?.lan_ip || '192.168.0.4'}
+              />
+            </label>
+            <label className="lan-field" style={{ flex: '0 0 7rem', minWidth: '7rem' }}>
+              <span>Port</span>
+              <input
+                className="search-input"
+                value={manualPort}
+                onChange={(e) => setManualPort(e.target.value)}
+                placeholder="8787"
+              />
+            </label>
+            <button
+              type="button"
+              className="btn"
+              disabled={connecting || !manualHost.trim()}
+              onClick={() => void onManualConnect()}
+            >
+              Connect by IP
+            </button>
+          </div>
+        ) : null}
       </section>
     </main>
   )

@@ -147,6 +147,8 @@ export interface LanShareStatus {
   lan_ip: string
   api_port: number
   base_url: string
+  beacon_running?: boolean
+  beacon_error?: string | null
   pending_count: number
   active_count: number
 }
@@ -170,6 +172,7 @@ export interface LanSource {
   host: string
   port: number
   base_url: string
+  is_self?: boolean
 }
 
 export interface LanConnectResult {

@@ -1,4 +1,5 @@
 from app.lan.discovery import decode_packet, encode_packet, _source_from_payload
+from app.lan.netinfo import broadcast_targets
 
 
 def test_encode_decode_roundtrip():
@@ -26,3 +27,9 @@ def test_source_from_payload():
     )
     assert source is not None
     assert source.base_url == "http://192.168.1.20:8787"
+
+
+def test_broadcast_targets_include_subnet():
+    targets = broadcast_targets("192.168.0.4")
+    assert "192.168.0.255" in targets
+    assert "255.255.255.255" in targets

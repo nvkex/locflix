@@ -31,3 +31,20 @@ def is_loopback_host(host: str | None) -> bool:
         return False
     h = host.strip().lower()
     return h in {"127.0.0.1", "::1", "localhost"} or h.startswith("127.")
+
+
+def broadcast_targets(ip: str | None = None) -> list[str]:
+    """IPv4 broadcast addresses to try (subnet /24 + limited broadcast)."""
+    targets = ["255.255.255.255"]
+    addr = ip or primary_lan_ip()
+    parts = addr.split(".")
+    if len(parts) == 4 and all(p.isdigit() for p in parts):
+        targets.insert(0, f"{parts[0]}.{parts[1]}.{parts[2]}.255")
+    # de-dupe, keep order
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for item in targets:
+        if item not in seen:
+            seen.add(item)
+            ordered.append(item)
+    return ordered
