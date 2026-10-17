@@ -33,7 +33,7 @@ def _is_public_lan_path(path: str, method: str) -> bool:
 
 
 def _is_local_control_path(path: str) -> bool:
-    # Seeder UI controls — loopback only.
+    # Seeder UI controls - loopback only.
     return path.startswith("/api/lan/") and not (
         path == "/api/lan/sessions"
         or path.startswith("/api/lan/sessions/")

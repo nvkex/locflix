@@ -1,4 +1,4 @@
-# Locflix — Feature Notes
+# Locflix - Feature Notes
 
 Brief how-it-works for the important behaviors. Companion to [DESIGN.md](DESIGN.md).
 
@@ -31,10 +31,10 @@ IDs are stable hashes of absolute paths. Default Play for a movie is the largest
 
 Resolved in order (first hit wins):
 
-1. **Cache** — `backend/data/posters/{id}.jpg`  
-2. **Sidecar** — `poster.jpg` / `folder.jpg`, or `SameName.jpg` next to a loose file  
-3. **Embedded** — attached cover art via ffmpeg  
-4. **TMDB** — only if `LOCFLIX_TMDB_API_KEY` is set  
+1. **Cache** - `backend/data/posters/{id}.jpg`  
+2. **Sidecar** - `poster.jpg` / `folder.jpg`, or `SameName.jpg` next to a loose file  
+3. **Embedded** - attached cover art via ffmpeg  
+4. **TMDB** - only if `LOCFLIX_TMDB_API_KEY` is set  
 
 Startup scan attaches cached posters quickly; missing ones enrich in a **background** thread so the API stays responsive. Use **Fetch posters** (or `POST /api/posters/fetch?force=true`) to re-download.
 
@@ -65,7 +65,7 @@ Locflix supports multiple UI themes via a switcher in the nav (stored in `localS
 | Theme | Look |
 |-------|------|
 | **Glass UI** (default) | Soft glassmorphism, rounded controls, cool blue accents |
-| **GenUI** | Veriguard-style human-auth / cyber-security HUD — neon green, monospace, angular panels |
+| **GenUI** | Veriguard-style human-auth / cyber-security HUD - neon green, monospace, angular panels |
 
 ## Streaming
 
@@ -105,8 +105,8 @@ Backend must bind `0.0.0.0` (`LOCFLIX_HOST`) and allow CORS for LAN browsers (`L
 
 ## Subtitles
 
-1. **External** — `.srt` / `.vtt` beside the video (same basename or language suffix; also `Subs/` folders)  
-2. **Embedded** — listed with ffprobe, extracted to WebVTT with ffmpeg, cached under `data/subs/`  
+1. **External** - `.srt` / `.vtt` beside the video (same basename or language suffix; also `Subs/` folders)  
+2. **Embedded** - listed with ffprobe, extracted to WebVTT with ffmpeg, cached under `data/subs/`  
 
 Player exposes a **CC** menu and caption size (localStorage). Poster cards show a **CC** badge when a title has available subtitles.
 

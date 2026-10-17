@@ -180,7 +180,7 @@ class LanHub:
         with self._lock:
             session_id = self._token_index.get(token)
             if not session_id:
-                # Token is known before approval too — look up by token field.
+                # Token is known before approval too - look up by token field.
                 for session in self._sessions.values():
                     if session.token == token:
                         return session

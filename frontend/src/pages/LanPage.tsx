@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useLan } from '../lan'
 
 function formatWhen(value: string | null): string {
-  if (!value) return '—'
+  if (!value) return '-'
   try {
     return new Date(value).toLocaleString()
   } catch {
@@ -56,7 +56,7 @@ export function LanPage() {
       const found = await scanSources(hints)
       if (found.length === 0) {
         setScanNote(
-          'No seeders found. Scan looks for PCs that are sharing a library — not for clients connected to you. Use Connect by IP if needed.',
+          'No seeders found. Scan looks for PCs that are sharing a library - not for clients connected to you. Use Connect by IP if needed.',
         )
       } else {
         setScanNote(`Found ${found.length} seeder${found.length === 1 ? '' : 's'}.`)
@@ -123,7 +123,7 @@ export function LanPage() {
 
       <section className="lan-panel glass">
         <div className="section-head">
-          <h2 className="section-title">Seeder — share this library</h2>
+          <h2 className="section-title">Seeder - share this library</h2>
         </div>
         <p className="muted">
           Turn this machine into a media source for other Locflix apps on the same Wi‑Fi.
@@ -256,7 +256,7 @@ export function LanPage() {
 
       <section className="lan-panel glass">
         <div className="section-head">
-          <h2 className="section-title">Leecher — join a source</h2>
+          <h2 className="section-title">Leecher - join a source</h2>
           <button
             type="button"
             className="btn"
@@ -268,7 +268,7 @@ export function LanPage() {
         </div>
         <p className="muted">
           Finds other PCs that are <strong>sharing</strong> a library (seeders). Your phone/laptop
-          that only plays media will not appear here — it shows under Connected devices on the
+          that only plays media will not appear here - it shows under Connected devices on the
           seeder.
         </p>
         {scanNote ? <p className="muted">{scanNote}</p> : null}

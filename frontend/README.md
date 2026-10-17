@@ -1,6 +1,6 @@
 # Locflix frontend
 
-React + TypeScript (Vite) UI for Locflix — glass Netflix-style browse, detail, and player.
+React + TypeScript (Vite) UI for Locflix - glass Netflix-style browse, detail, and player.
 
 ## Dev
 

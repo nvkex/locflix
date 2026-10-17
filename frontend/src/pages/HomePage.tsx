@@ -31,7 +31,7 @@ function heroMediaCopy(
     }
     if (show && show.seasons.length > 1) {
       const nums = show.seasons.map((season) => season.number).sort((a, b) => a - b)
-      return { title, detail: `Seasons ${nums[0]}–${nums[nums.length - 1]}` }
+      return { title, detail: `Seasons ${nums[0]}-${nums[nums.length - 1]}` }
     }
     return { title, detail: null }
   }

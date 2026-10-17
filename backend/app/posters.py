@@ -117,7 +117,7 @@ def _copy_as_jpeg(src: Path, dest: Path) -> bool:
         if ffmpeg is None:
             if suffix == ".png":
                 shutil.copyfile(src, dest.with_suffix(".png"))
-                # Serve path still expects .jpg name — copy bytes anyway for browsers
+                # Serve path still expects .jpg name - copy bytes anyway for browsers
                 shutil.copyfile(src, dest)
                 return dest.is_file()
             return False

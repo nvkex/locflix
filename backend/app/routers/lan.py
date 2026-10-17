@@ -68,7 +68,7 @@ async def update_share(body: ShareUpdate, request: Request) -> dict[str, Any]:
 
 @router.post("/lan/owner-consent")
 async def owner_consent(body: OwnerConsentUpdate, request: Request) -> dict[str, Any]:
-    """Seeder browser session consent — required once before remotes can stay connected."""
+    """Seeder browser session consent - required once before remotes can stay connected."""
     _require_loopback(request)
     return lan_hub.set_owner_consent(body.approved)
 

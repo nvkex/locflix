@@ -4,7 +4,7 @@ REM Start Locflix backend + frontend (assumes deps already installed).
 
 set "ROOT=%~dp0.."
 if not exist "%ROOT%\backend\.venv\Scripts\activate.bat" (
-  echo Missing backend\.venv — create and install deps first.
+  echo Missing backend\.venv - create and install deps first.
   exit /b 1
 )
 

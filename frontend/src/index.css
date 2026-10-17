@@ -1075,7 +1075,7 @@ img {
   color: var(--text-primary);
 }
 
-/* ---------- GenUI — Veriguard human-auth / cyber-security ---------- */
+/* ---------- GenUI - Veriguard human-auth / cyber-security ---------- */
 
 [data-theme='genui'] {
   --glass-bg: rgba(4, 18, 12, 0.78);

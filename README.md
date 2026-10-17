@@ -11,7 +11,7 @@ Default libraries (configurable):
 | Movies | `D:\TV\Movies` |
 | Series | `D:\TV\Series` |
 
-> **Status:** Usable MVP — catalog, multi-theme UI, streaming player, continue watching, subtitles, and TMDB posters are implemented. Docker packaging is still optional/future.  
+> **Status:** Usable MVP - catalog, multi-theme UI, streaming player, continue watching, subtitles, and TMDB posters are implemented. Docker packaging is still optional/future.  
 > See [docs/DESIGN.md](docs/DESIGN.md) and [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md).
 
 ---
@@ -20,7 +20,7 @@ Default libraries (configurable):
 
 - Netflix-like home (recently added hero), rows, title detail, and fullscreen player
 - Multi-theme UI: **Glass** (default) and **GenUI** (Veriguard-style cyber-security)
-- **LAN streaming** — share this library to other devices on the same Wi‑Fi (seeder/leecher)
+- **LAN streaming** - share this library to other devices on the same Wi‑Fi (seeder/leecher)
 - Catalog from local **Movies** and **Series** directories
 - Movies as **folders** or **loose** `.mp4` / `.mkv` / etc. in the Movies root
 - Season / episode navigation (`SXXEYY` filenames)
@@ -30,7 +30,7 @@ Default libraries (configurable):
 - Auto posters: local sidecar → embedded cover → **TMDB** (optional API key)
 - Search, rescan, fetch posters
 - Configurable paths for any OS
-- **Optional** Docker later — native install is first-class today
+- **Optional** Docker later - native install is first-class today
 
 ---
 
@@ -93,7 +93,7 @@ Open the Vite URL (typically `http://localhost:5173`).
 
 On Windows you can also run `powershell -File scripts/dev.ps1`.
 
-After setting a TMDB key, use **Fetch posters** in the header (or restart — posters also enrich in the background on startup).
+After setting a TMDB key, use **Fetch posters** in the header (or restart - posters also enrich in the background on startup).
 
 ### Docker (optional)
 
@@ -103,7 +103,7 @@ Not packaged yet. Native install is the supported path today.
 
 ## Library layout
 
-**Movies** — folder per title **or** a loose video file in the Movies root.
+**Movies** - folder per title **or** a loose video file in the Movies root.
 
 ```text
 Movies/
@@ -115,7 +115,7 @@ Movies/
   Apex.2026.1080p.WEBRip.x265.mkv   ← loose file = its own title
 ```
 
-**Series** — one folder per show. Episode files must contain `SXXEYY` (case-insensitive). Nested season folders are optional.
+**Series** - one folder per show. Episode files must contain `SXXEYY` (case-insensitive). Nested season folders are optional.
 
 ```text
 Series/

@@ -66,7 +66,7 @@ async def put_progress(media_id: str, body: ProgressUpdate, response: Response):
         raise HTTPException(status_code=404, detail="Media not in catalog")
 
     # Under 1 minute: do not create/update Continue Watching.
-    # Never delete existing progress here — the player often reports ~0s
+    # Never delete existing progress here - the player often reports ~0s
     # briefly before resume-seek applies, which used to wipe real progress.
     if body.position_seconds < MIN_CONTINUE_WATCHING_SECONDS:
         response.status_code = 204
