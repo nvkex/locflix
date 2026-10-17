@@ -16,11 +16,21 @@ from app.lan.discovery import (
     probe_http_seeder,
     scan_lan_sources,
 )
-from app.lan.netinfo import default_share_name, primary_lan_ip
+from app.lan.netinfo import default_share_name, local_hostname, primary_lan_ip, resolve_hostname
 
 
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+_GENERIC_DEVICE_NAMES = {
+    "locflix leecher",
+    "unknown device",
+    "chrome browser",
+    "edge browser",
+    "firefox browser",
+    "safari browser",
+}
 
 
 @dataclass
@@ -36,11 +46,13 @@ class LanSession:
     last_seen_at: str | None = None
     now_playing_id: str | None = None
     now_playing_title: str | None = None
+    hostname: str | None = None
 
     def to_public(self) -> dict[str, Any]:
         return {
             "session_id": self.session_id,
             "device_name": self.device_name,
+            "hostname": self.hostname,
             "device_id": self.device_id,
             "client_ip": self.client_ip,
             "status": self.status,
@@ -85,6 +97,7 @@ class LanHub:
                 "base_url": f"http://{lan_ip}:{settings.port}",
                 "beacon_running": bool(beacon and beacon.running),
                 "beacon_error": beacon.last_error if beacon else None,
+                "hostname": local_hostname(),
                 "pending_count": sum(1 for s in self._sessions.values() if s.status == "pending"),
                 "active_count": sum(1 for s in self._sessions.values() if s.status == "approved"),
             }
@@ -122,7 +135,8 @@ class LanHub:
 
     def create_session(self, *, device_name: str, device_id: str, client_ip: str) -> LanSession:
         now = _utc_now()
-        clean_name = (device_name or "Unknown device").strip()[:80] or "Unknown device"
+        resolved = resolve_hostname(client_ip)
+        clean_name = _display_device_name(device_name, resolved)
         clean_device_id = (device_id or uuid.uuid4().hex).strip()[:80]
         with self._lock:
             if not self.share_enabled:
@@ -132,6 +146,7 @@ class LanHub:
                 if existing.device_id == clean_device_id and existing.status in {"pending", "approved"}:
                     existing.client_ip = client_ip
                     existing.device_name = clean_name
+                    existing.hostname = resolved or existing.hostname
                     existing.updated_at = now
                     existing.last_seen_at = now
                     return existing
@@ -147,6 +162,7 @@ class LanHub:
                 created_at=now,
                 updated_at=now,
                 last_seen_at=now,
+                hostname=resolved,
             )
             self._sessions[session.session_id] = session
             if status == "approved":
@@ -332,6 +348,15 @@ class LanHub:
                 session.now_playing_id = None
                 session.now_playing_title = None
         self._token_index.clear()
+
+
+def _display_device_name(device_name: str, resolved_hostname: str | None) -> str:
+    clean = (device_name or "").strip()[:80]
+    if clean and clean.lower() not in _GENERIC_DEVICE_NAMES:
+        return clean
+    if resolved_hostname:
+        return resolved_hostname[:80]
+    return clean or "Unknown device"
 
 
 lan_hub = LanHub()

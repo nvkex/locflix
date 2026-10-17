@@ -26,6 +26,26 @@ def default_share_name() -> str:
         return "Locflix Seeder"
 
 
+def local_hostname() -> str:
+    try:
+        name = socket.gethostname().strip()
+        return name or "Locflix"
+    except OSError:
+        return "Locflix"
+
+
+def resolve_hostname(ip: str | None) -> str | None:
+    """Best-effort reverse DNS for a client IP (short host label)."""
+    if not ip or is_loopback_host(ip):
+        return None
+    try:
+        host, _aliases, _addrs = socket.gethostbyaddr(ip)
+    except OSError:
+        return None
+    label = (host or "").split(".")[0].strip()
+    return label or None
+
+
 def is_loopback_host(host: str | None) -> bool:
     if not host:
         return False

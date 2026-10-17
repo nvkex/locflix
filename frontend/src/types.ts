@@ -149,6 +149,7 @@ export interface LanShareStatus {
   base_url: string
   beacon_running?: boolean
   beacon_error?: string | null
+  hostname?: string
   pending_count: number
   active_count: number
 }
@@ -156,6 +157,7 @@ export interface LanShareStatus {
 export interface LanDevice {
   session_id: string
   device_name: string
+  hostname?: string | null
   device_id: string
   client_ip: string
   status: string

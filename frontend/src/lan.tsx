@@ -59,15 +59,22 @@ function readStoredRemote(): RemoteSource | null {
   return null
 }
 
-function defaultDeviceName(): string {
+function browserLabel(): string {
   if (typeof navigator !== 'undefined' && navigator.userAgent) {
     const ua = navigator.userAgent
-    if (/Edg\//.test(ua)) return 'Edge browser'
-    if (/Chrome\//.test(ua)) return 'Chrome browser'
-    if (/Firefox\//.test(ua)) return 'Firefox browser'
-    if (/Safari\//.test(ua)) return 'Safari browser'
+    if (/Edg\//.test(ua)) return 'Edge'
+    if (/Chrome\//.test(ua)) return 'Chrome'
+    if (/Firefox\//.test(ua)) return 'Firefox'
+    if (/Safari\//.test(ua)) return 'Safari'
   }
-  return 'Locflix Leecher'
+  return 'Browser'
+}
+
+function buildDeviceName(hostname?: string | null): string {
+  const host = (hostname || '').trim()
+  const browser = browserLabel()
+  if (host) return `${host} · ${browser}`
+  return `${browser} on Locflix`
 }
 
 export function LanProvider({ children }: { children: ReactNode }) {
@@ -78,8 +85,8 @@ export function LanProvider({ children }: { children: ReactNode }) {
   const [refreshing, setRefreshing] = useState(false)
   const [scanning, setScanning] = useState(false)
   const [connecting, setConnecting] = useState(false)
+  const [deviceName, setDeviceName] = useState(() => buildDeviceName())
   const deviceId = useMemo(() => readDeviceId(), [])
-  const deviceName = useMemo(() => defaultDeviceName(), [])
 
   const persistRemote = useEffectEvent((next: RemoteSource | null) => {
     setRemoteSource(next)
@@ -101,6 +108,7 @@ export function LanProvider({ children }: { children: ReactNode }) {
     try {
       const status = await api.lanStatus()
       setShare(status)
+      setDeviceName(buildDeviceName(status.hostname || status.share_name))
       if (status.share_enabled) {
         const [devs] = await Promise.all([api.lanDevices()])
         setDevices(devs)

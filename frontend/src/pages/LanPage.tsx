@@ -11,6 +11,14 @@ function formatWhen(value: string | null): string {
   }
 }
 
+function deviceLabel(device: { device_name: string; hostname?: string | null }): string {
+  const name = (device.device_name || '').trim()
+  const host = (device.hostname || '').trim()
+  if (name) return name
+  if (host) return host
+  return 'Unknown device'
+}
+
 export function LanPage() {
   const {
     share,
@@ -146,9 +154,12 @@ export function LanPage() {
             {pendingDevices.map((device) => (
               <li key={device.session_id}>
                 <div>
-                  <strong>{device.device_name}</strong>
+                  <div className="lan-device-name">{deviceLabel(device)}</div>
                   <div className="muted">
-                    {device.client_ip} · waiting · {formatWhen(device.created_at)}
+                    {device.client_ip}
+                    {device.hostname ? ` · ${device.hostname}` : ''}
+                    {' · waiting · '}
+                    {formatWhen(device.created_at)}
                   </div>
                 </div>
                 <div className="lan-inline-actions">
@@ -178,9 +189,12 @@ export function LanPage() {
             {activeDevices.map((device) => (
               <li key={device.session_id}>
                 <div>
-                  <strong>{device.device_name}</strong>
+                  <div className="lan-device-name">{deviceLabel(device)}</div>
                   <div className="muted">
                     {device.client_ip}
+                    {device.hostname && device.hostname !== device.device_name
+                      ? ` · ${device.hostname}`
+                      : ''}
                     {device.now_playing_title
                       ? ` · Playing ${device.now_playing_title}`
                       : ' · Idle'}
