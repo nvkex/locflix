@@ -25,8 +25,10 @@ export function LanPage() {
     devices,
     sources,
     remote,
+    refreshing,
     scanning,
     connecting,
+    refreshShare,
     setShareEnabled,
     grantOwnerConsent,
     decideDeviceConsent,
@@ -35,12 +37,34 @@ export function LanPage() {
     connectSource,
     connectHost,
     disconnectRemote,
+    rememberSeederHint,
   } = useLan()
   const [shareName, setShareName] = useState('')
   const [manualHost, setManualHost] = useState('')
   const [manualPort, setManualPort] = useState('8787')
   const [error, setError] = useState<string | null>(null)
+  const [scanNote, setScanNote] = useState<string | null>(null)
   const navigate = useNavigate()
+
+  async function onScan() {
+    setError(null)
+    setScanNote(null)
+    try {
+      const hints = manualHost.trim()
+        ? [`${manualHost.trim()}:${Number(manualPort) || 8787}`]
+        : []
+      const found = await scanSources(hints)
+      if (found.length === 0) {
+        setScanNote(
+          'No seeders found. Scan looks for PCs that are sharing a library — not for clients connected to you. Use Connect by IP if needed.',
+        )
+      } else {
+        setScanNote(`Found ${found.length} seeder${found.length === 1 ? '' : 's'}.`)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Scan failed')
+    }
+  }
 
   async function onToggleShare() {
     setError(null)
@@ -70,6 +94,7 @@ export function LanPage() {
     setError(null)
     try {
       const port = Number(manualPort) || 8787
+      rememberSeederHint(manualHost, port)
       await connectHost(manualHost, port)
       navigate('/')
       navigate(0)
@@ -85,6 +110,14 @@ export function LanPage() {
     <main className="page lan-page">
       <header className="section-head">
         <h1 className="section-title">LAN streaming</h1>
+        <button
+          type="button"
+          className="btn"
+          disabled={refreshing}
+          onClick={() => void refreshShare()}
+        >
+          {refreshing ? 'Refreshing…' : 'Refresh'}
+        </button>
       </header>
       {error ? <p className="error">{error}</p> : null}
 
@@ -146,9 +179,15 @@ export function LanPage() {
 
       <section className="lan-panel glass">
         <div className="section-head">
-          <h2 className="section-title">Connected devices</h2>
+          <h2 className="section-title">
+            Connected devices
+            {share?.active_count ? ` (${share.active_count})` : ''}
+          </h2>
         </div>
-        <p className="muted">Devices currently connected or waiting to stream from this seeder.</p>
+        <p className="muted">
+          Laptops/phones currently streaming <em>from this PC</em> (leechers). This is not the scan
+          list.
+        </p>
         {pendingDevices.length > 0 ? (
           <ul className="lan-device-list">
             {pendingDevices.map((device) => (
@@ -222,14 +261,17 @@ export function LanPage() {
             type="button"
             className="btn"
             disabled={scanning || Boolean(remote)}
-            onClick={() => void scanSources()}
+            onClick={() => void onScan()}
           >
-            {scanning ? 'Scanning…' : 'Scan LAN sources'}
+            {scanning ? 'Scanning…' : 'Scan for seeders'}
           </button>
         </div>
         <p className="muted">
-          Scans the Wi‑Fi subnet over HTTP (UDP broadcast is often blocked). Takes a few seconds.
+          Finds other PCs that are <strong>sharing</strong> a library (seeders). Your phone/laptop
+          that only plays media will not appear here — it shows under Connected devices on the
+          seeder.
         </p>
+        {scanNote ? <p className="muted">{scanNote}</p> : null}
         {remote ? (
           <div className="lan-remote-active">
             <div>

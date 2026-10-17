@@ -12,6 +12,7 @@ import type { LanDevice, LanShareStatus, LanSource } from './types'
 
 const DEVICE_ID_KEY = 'locflix.lan.device_id'
 const REMOTE_KEY = 'locflix.lan.remote'
+const SEEDER_HINTS_KEY = 'locflix.lan.seeder_hints'
 
 interface LanContextValue {
   share: LanShareStatus | null
@@ -26,11 +27,12 @@ interface LanContextValue {
   grantOwnerConsent: (approved: boolean) => Promise<void>
   decideDeviceConsent: (sessionId: string, approve: boolean) => Promise<void>
   revokeDevice: (sessionId: string) => Promise<void>
-  scanSources: () => Promise<void>
+  scanSources: (extraHints?: string[]) => Promise<LanSource[]>
   connectSource: (source: LanSource) => Promise<void>
   connectHost: (host: string, port?: number) => Promise<void>
   disconnectRemote: () => void
   deviceName: string
+  rememberSeederHint: (host: string, port?: number) => void
 }
 
 const LanContext = createContext<LanContextValue | null>(null)
@@ -57,6 +59,29 @@ function readStoredRemote(): RemoteSource | null {
     /* ignore */
   }
   return null
+}
+
+function readSeederHints(): string[] {
+  try {
+    const raw = localStorage.getItem(SEEDER_HINTS_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as string[]
+    return Array.isArray(parsed) ? parsed.filter(Boolean).slice(0, 20) : []
+  } catch {
+    return []
+  }
+}
+
+function writeSeederHint(host: string, port = 8787) {
+  const clean = host.trim().replace(/^https?:\/\//, '').split('/')[0]
+  if (!clean) return
+  const hint = clean.includes(':') ? clean : `${clean}:${port}`
+  const next = [hint, ...readSeederHints().filter((item) => item !== hint)].slice(0, 20)
+  try {
+    localStorage.setItem(SEEDER_HINTS_KEY, JSON.stringify(next))
+  } catch {
+    /* ignore */
+  }
 }
 
 function browserLabel(): string {
@@ -124,8 +149,6 @@ export function LanProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void refreshShare()
-    const id = window.setInterval(() => void refreshShare(), 2500)
-    return () => window.clearInterval(id)
   }, [])
 
   async function setShareEnabled(enabled: boolean, name?: string) {
@@ -151,14 +174,24 @@ export function LanProvider({ children }: { children: ReactNode }) {
     await refreshShare()
   }
 
-  async function scanSources() {
+  async function scanSources(extraHints: string[] = []) {
     setScanning(true)
     try {
-      const found = await api.lanDiscover()
+      const hints = [...extraHints, ...readSeederHints()]
+      if (remote?.baseUrl) hints.unshift(remote.baseUrl)
+      const found = await api.lanDiscover(hints)
       setSources(found)
+      for (const source of found) {
+        if (!source.is_self) writeSeederHint(source.host, source.port)
+      }
+      return found
     } finally {
       setScanning(false)
     }
+  }
+
+  function rememberSeederHint(host: string, port = 8787) {
+    writeSeederHint(host, port)
   }
 
   async function connectSource(source: LanSource) {
@@ -185,8 +218,10 @@ export function LanProvider({ children }: { children: ReactNode }) {
         )
       }
 
+      const baseUrl = result.base_url || source.base_url
+      writeSeederHint(source.host, source.port)
       persistRemote({
-        baseUrl: result.base_url || source.base_url,
+        baseUrl,
         token: result.token,
         name: result.share_name || source.name,
         seederId: result.seeder_id || source.seeder_id,
@@ -231,6 +266,7 @@ export function LanProvider({ children }: { children: ReactNode }) {
     connectHost,
     disconnectRemote,
     deviceName,
+    rememberSeederHint,
   }
 
   return <LanContext.Provider value={value}>{children}</LanContext.Provider>

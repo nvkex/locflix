@@ -151,7 +151,12 @@ export const api = {
     ),
   lanRevokeDevice: (sessionId: string) =>
     request<{ status: string }>(`/api/lan/devices/${sessionId}`, { method: 'DELETE' }, { local: true }),
-  lanDiscover: () => request<LanSource[]>('/api/lan/discover', { method: 'POST' }, { local: true }),
+  lanDiscover: (hints: string[] = []) =>
+    request<LanSource[]>(
+      '/api/lan/discover',
+      { method: 'POST', body: JSON.stringify({ hints }) },
+      { local: true },
+    ),
   lanSources: () => request<LanSource[]>('/api/lan/sources', undefined, { local: true }),
   lanConnect: (body: {
     host: string
