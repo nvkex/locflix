@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { api } from '../api'
+import { api, mediaAssetUrl } from '../api'
 import { MediaRow } from '../components/MediaRow'
 import { PosterCard } from '../components/PosterCard'
 import type { Movie, ProgressEntry, RecentItem, Show } from '../types'
@@ -31,7 +31,7 @@ function heroMediaCopy(
     }
     if (show && show.seasons.length > 1) {
       const nums = show.seasons.map((season) => season.number).sort((a, b) => a - b)
-      return { title, detail: `Seasons ${nums[0]}–${nums[nums.length - 1]}` }
+      return { title, detail: `Seasons ${nums[0]}-${nums[nums.length - 1]}` }
     }
     return { title, detail: null }
   }
@@ -105,18 +105,19 @@ export function HomePage() {
 
   return (
     <main className="page">
-      <section className={`hero${featured?.poster ? ' has-poster' : ''}`}>
-        {recent.map((item, index) =>
-          item.poster ? (
+      <section className={`hero${mediaAssetUrl(featured?.poster) ? ' has-poster' : ''}`}>
+        {recent.map((item, index) => {
+          const posterSrc = mediaAssetUrl(item.poster)
+          return posterSrc ? (
             <div
               key={`${item.kind}-${item.id}`}
               className={`hero-backdrop${index === activeRecent ? ' active' : ''}`}
               aria-hidden={index !== activeRecent}
             >
-              <img src={item.poster} alt="" />
+              <img src={posterSrc} alt="" />
             </div>
-          ) : null,
-        )}
+          ) : null
+        })}
         <div className="hero-scrim" aria-hidden />
         <div className="hero-content">
           {featured && featuredCopy ? (

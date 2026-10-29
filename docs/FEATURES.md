@@ -1,4 +1,4 @@
-# Locflix — Feature Notes
+# Locflix - Feature Notes
 
 Brief how-it-works for the important behaviors. Companion to [DESIGN.md](DESIGN.md).
 
@@ -31,10 +31,10 @@ IDs are stable hashes of absolute paths. Default Play for a movie is the largest
 
 Resolved in order (first hit wins):
 
-1. **Cache** — `backend/data/posters/{id}.jpg`  
-2. **Sidecar** — `poster.jpg` / `folder.jpg`, or `SameName.jpg` next to a loose file  
-3. **Embedded** — attached cover art via ffmpeg  
-4. **TMDB** — only if `LOCFLIX_TMDB_API_KEY` is set  
+1. **Cache** - `backend/data/posters/{id}.jpg`  
+2. **Sidecar** - `poster.jpg` / `folder.jpg`, or `SameName.jpg` next to a loose file  
+3. **Embedded** - attached cover art via ffmpeg  
+4. **TMDB** - only if `LOCFLIX_TMDB_API_KEY` is set  
 
 Startup scan attaches cached posters quickly; missing ones enrich in a **background** thread so the API stays responsive. Use **Fetch posters** (or `POST /api/posters/fetch?force=true`) to re-download.
 
@@ -65,11 +65,32 @@ Locflix supports multiple UI themes via a switcher in the nav (stored in `localS
 | Theme | Look |
 |-------|------|
 | **Glass UI** (default) | Soft glassmorphism, rounded controls, cool blue accents |
-| **GenUI** | Veriguard-style human-auth / cyber-security HUD — neon green, monospace, scanlines, angular panels |
+| **GenUI** | Veriguard-style human-auth / cyber-security HUD - neon green, monospace, angular panels |
 
 ## Streaming
 
 `GET /api/stream/{id}` serves the file with HTTP **Range** (seekable `206`). Paths must resolve under the configured Movies/Series roots.
+
+---
+
+## LAN multi-device streaming
+
+Two roles on the same Wi‑Fi/LAN:
+
+| Role | Machine | Job |
+|------|---------|-----|
+| **Seeder** | Has the media files | Shares library after one session consent |
+| **Leecher** | Another laptop/browser | Scans for seeders, connects, streams |
+
+Flow:
+
+1. Seeder opens **LAN** → Start sharing → approve the consent modal once for this session  
+2. Leecher opens **LAN** → **Scan LAN sources** (UDP best-effort + HTTP scan of the local `/24`, since many Wi‑Fi routers block UDP broadcast) → Connect  
+3. If scan still misses a host, use **Connect by IP** with the seeder LAN address  
+4. Leecher header shows **Streaming from {seeder name}**; catalog/player hit the seeder API  
+5. Seeder **LAN** page lists connected devices and what they are playing  
+
+Backend must bind `0.0.0.0` (`LOCFLIX_HOST`) and allow CORS for LAN browsers (`LOCFLIX_CORS_ORIGINS=*`). Remote stream/poster requests use `X-Locflix-Lan-Token` or `?lan_token=`.
 
 ---
 
@@ -84,8 +105,8 @@ Locflix supports multiple UI themes via a switcher in the nav (stored in `localS
 
 ## Subtitles
 
-1. **External** — `.srt` / `.vtt` beside the video (same basename or language suffix; also `Subs/` folders)  
-2. **Embedded** — listed with ffprobe, extracted to WebVTT with ffmpeg, cached under `data/subs/`  
+1. **External** - `.srt` / `.vtt` beside the video (same basename or language suffix; also `Subs/` folders)  
+2. **Embedded** - listed with ffprobe, extracted to WebVTT with ffmpeg, cached under `data/subs/`  
 
 Player exposes a **CC** menu and caption size (localStorage). Poster cards show a **CC** badge when a title has available subtitles.
 
@@ -106,6 +127,9 @@ File badges: quality (`1080p` / `720p`) and audio languages. A borderless table 
 | Variable | Role |
 |----------|------|
 | `LOCFLIX_MOVIES_DIR` / `LOCFLIX_SERIES_DIR` | Library roots |
+| `LOCFLIX_HOST` / `LOCFLIX_PORT` | API bind (use `0.0.0.0` for LAN seeding) |
+| `LOCFLIX_CORS_ORIGINS` | Browser origins (`*` for LAN leechers) |
+| `LOCFLIX_LAN_DISCOVERY_PORT` | UDP discovery port (default `8788`) |
 | `LOCFLIX_TMDB_API_KEY` | Optional poster enrichment / detail metadata |
 | `LOCFLIX_OPENSUBTITLES_API_KEY` | Optional English subtitle downloads |
 | `LOCFLIX_FETCH_POSTERS_ON_SCAN` | Background TMDB on scan/start |
